@@ -1,0 +1,11 @@
+* 8ef8077 (HEAD -> main) feat(api): greet with Hello GitOps! (#10)
+* 48335d4 ci: add Claude Code agent workflows, CLAUDE.md and settings (#9)
+* a4d6ce7 ci: add image publish, promote, release and PR title workflows (#8)
+* 163e71e (tag: v0.2.0, origin/main, origin/feat/3-completed-filter, feat/3-completed-filter) feat(api): filter items by ?completed=true|false (#3)
+* 30e532d feat(api): list incomplete items first (#6)
+*   42d2eed Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config
+|\  
+| * 105cc54 fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)
+|/  
+* 7e4d5cf ci: add GitHub Actions CI and collaboration templates (#4)
+* 539f79d (tag: v0.1.0) chore: initial import of todo app (FastAPI + React)

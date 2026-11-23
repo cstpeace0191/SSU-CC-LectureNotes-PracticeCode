@@ -1,0 +1,7 @@
+[project]
+name = "getting-started-todo-app-fastapi"
+version = "0.1.0"
+description = "getting-started-todo-app-FastAPI project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

@@ -1,0 +1,7 @@
+node_modules
+npm-cache
+todo.db
+getting-started-app
+*.exe
+.git
+.gitignore

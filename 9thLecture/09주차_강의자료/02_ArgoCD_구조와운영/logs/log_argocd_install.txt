@@ -1,0 +1,15 @@
+$ kubectl get crd | grep argoproj
+applications.argoproj.io      2026-11-18T05:14:42Z
+applicationsets.argoproj.io   2026-11-18T05:14:44Z
+appprojects.argoproj.io       2026-11-18T05:14:42Z
+$ kubectl get deploy,sts -n argocd
+NAME                                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/argocd-applicationset-controller   0/1     0            0           67m
+deployment.apps/argocd-dex-server                  0/1     0            0           67m
+deployment.apps/argocd-notifications-controller    0/1     0            0           67m
+deployment.apps/argocd-redis                       0/1     0            0           67m
+deployment.apps/argocd-repo-server                 0/1     0            0           67m
+deployment.apps/argocd-server                      0/1     0            0           67m
+
+NAME                                             READY   AGE
+statefulset.apps/argocd-application-controller   0/1     67m

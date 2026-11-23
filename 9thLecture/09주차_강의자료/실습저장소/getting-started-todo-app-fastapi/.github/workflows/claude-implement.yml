@@ -1,0 +1,41 @@
+name: Claude Implement
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  implement:
+    if: github.event.label.name == 'agent-ready'     # 라벨은 쓰기 권한자만 붙일 수 있다
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    concurrency: claude-issue-${{ github.event.issue.number }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements-dev.txt
+      - uses: anthropics/claude-code-action@v1
+        env:
+          SQLITE_DB_LOCATION: /tmp/todo-test.db
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "/fix-issue ${{ github.event.issue.number }}"    # 이슈 본문을 프롬프트에 직접 넣지 않는다
+          claude_args: "--max-turns 30"
+          settings: |
+            {"permissions": {"allow": [
+              "Edit", "Write", "Bash(pytest:*)", "Bash(ruff check:*)",
+              "Bash(git:*)", "Bash(gh pr create:*)", "Bash(gh issue view:*)"
+            ], "deny": ["Bash(gh pr merge:*)"]}}

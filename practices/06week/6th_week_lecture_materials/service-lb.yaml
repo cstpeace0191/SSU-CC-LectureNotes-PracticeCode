@@ -1,0 +1,31 @@
+#service-lb.yaml
+apiVersion: v1                # ① 쿠버네티스 코어 API 버전
+kind: Service                 # ② 클라우드/인프라의 로드밸런서를 연동하여 공인 IP(External IP)를 부여하는 Service
+metadata:
+  name: web-lb-service        # ③ Service의 고유 식별 이름
+  namespace: default          #    - 배포 대상 네임스페이스 (deployment.yaml의 namespace와 일치)
+  labels:                     #    - Service 리소스 분류/식별을 위한 라벨
+    app: web
+  annotations:                #    - kube-linter 단독 파일 검사 시 dangling-service 예외 처리
+    ignore-check.kube-linter.io/dangling-service: "deployment.yaml의 Pod(app: web)와 연동되는 서비스"
+spec:
+  type: LoadBalancer          # ④ 서비스 유형: 외부 로드밸런서(AWS NLB/ALB, GCP LB, MetalLB 등) 자동 프로비저닝
+  selector:
+    app: web                  # ⑤ deployment.yaml의 Pod 라벨(app: web)과 일치시켜 트래픽을 분산할 대상 Pod 지정
+  ports:
+    - protocol: TCP           # ⑥ 전송 프로토콜 (기본값: TCP)
+      port: 80                # ⑦ 외부 로드밸런서가 트래픽을 수신할 공인 포트 (HTTP 기본 80)
+      targetPort: 80          # ⑧ 실제 Pod 컨테이너의 포트 (deployment.yaml의 containerPort: 80과 일치)
+
+# [외부 접속 및 검증 방법]
+# 1. 서비스 상태 및 외부 IP 확인:
+#    $ kubectl get svc web-lb-service
+#    (EXTERNAL-IP 열에 할당된 공인 IP/호스트 확인)
+# 2. 브라우저/curl 접속:
+#    http://<EXTERNAL-IP>:80
+# 💡 kind 로컬 환경 주의사항 및 실습 팁:
+#    kind는 실제 클라우드가 아니므로 기본적으로 EXTERNAL-IP가 <pending> 상태로 유지됩니다.
+#    [해결 방법 1] 포트 포워딩으로 즉시 테스트 (별도 도구 설치 없이 가장 간편):
+#    $ kubectl port-forward svc/web-lb-service 8080:80  --> 브라우저에서 http://localhost:8080 접속
+#    [해결 방법 2] kind 공식 로드밸런서 도구 사용:
+#    새 터미널 창에서 '$ cloud-provider-kind' 명령어를 실행해 두면 EXTERNAL-IP가 자동 할당됩니다.

@@ -1,0 +1,71 @@
+$ argocd app get todo-root --refresh | head -20
+Name:               argocd/todo-root
+Project:            default
+Server:             https://kubernetes.default.svc
+Namespace:          argocd
+URL:                http://localhost:8080/applications/todo-root
+Source:
+- Repo:             git://127.0.0.1/todo-app-config.git
+  Target:           main
+  Path:             argocd
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated
+Sync Status:        OutOfSync from main (3b377d3)
+Health Status:      Healthy
+
+GROUP        KIND            NAMESPACE  NAME  STATUS     HEALTH   HOOK  MESSAGE
+argoproj.io  AppProject      argocd     todo  OutOfSync                 
+argoproj.io  ApplicationSet  argocd     todo  OutOfSync  Healthy        
+
+$ argocd app diff todo-prod
+
+===== /Service todo-prod/todo-app ======
+0a1,18
+> apiVersion: v1
+> kind: Service
+> metadata:
+>   annotations:
+>     argocd.argoproj.io/tracking-id: todo-prod:/Service:todo-prod/todo-app
+>   labels:
+>     app.kubernetes.io/environment: prod
+>     app.kubernetes.io/name: todo-app
+>   name: todo-app
+>   namespace: todo-prod
+> spec:
+>   ports:
+>   - name: http
+>     port: 80
+>     targetPort: http
+>   selector:
+>     app.kubernetes.io/name: todo-app
+>   type: LoadBalancer
+
+===== apps/Deployment todo-prod/todo-app ======
+0a1,71
+> apiVersion: apps/v1
+> kind: Deployment
+> metadata:
+>   annotations:
+>     argocd.argoproj.io/tracking-id: todo-prod:apps/Deployment:todo-prod/todo-app
+>   labels:
+
+$ argocd app sync todo-prod
+
+Operation:          Sync
+Sync Revision:      3b377d309883a7c45c35e27c1358a19d679cdee9
+Phase:              Succeeded
+Start:              2026-11-18 14:22:15 +0900 KST
+Finished:           2026-11-18 14:22:15 +0900 KST
+Duration:           0s
+Message:            successfully synced (all tasks run)
+
+GROUP  KIND        NAMESPACE  NAME      STATUS  HEALTH       HOOK  MESSAGE
+       Service     todo-prod  todo-app  Synced  Progressing        service/todo-app created
+apps   Deployment  todo-prod  todo-app  Synced  Progressing        deployment.apps/todo-app created
+
+$ argocd app list
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS     HEALTH       SYNCPOLICY  CONDITIONS  REPO                                 PATH           TARGET
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     Synced     Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/dev   main
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     Synced     Progressing  Manual      <none>      git://127.0.0.1/todo-app-config.git  overlays/prod  main
+argocd/todo-root  https://kubernetes.default.svc  argocd     default  OutOfSync  Healthy      Auto        <none>      git://127.0.0.1/todo-app-config.git  argocd         main
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced     Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/stg   main

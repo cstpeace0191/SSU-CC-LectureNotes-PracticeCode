@@ -1,0 +1,90 @@
+#statefulset.yaml
+# 1. StatefulSet Pod들의 고유 네트워크 도메인을 위한 Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+  namespace: default
+  labels:
+    app: web
+  annotations:
+    ignore-check.kube-linter.io/dangling-service: "web-sts StatefulSet과 연동되는 Headless 서비스"
+spec:
+  clusterIP: None                # Headless Service 설정 (단일 VIP 대신 Pod별 고유 DNS 레코드 생성)
+  selector:
+    app: web
+  ports:
+  - port: 80
+    name: web
+---
+# 2. StatefulSet 정의
+apiVersion: apps/v1              # ① 워크로드 리소스 관리 API 그룹/버전
+kind: StatefulSet                 # ② 고유 식별자(인덱스)와 순서성을 보장하는 상태 유지형 컨트롤러
+metadata:                        # ③ StatefulSet의 식별 정보
+  name: web-sts                  #    - StatefulSet 고유 이름 (Pod 이름: web-sts-0, web-sts-1, ...)
+  namespace: default             #    - 배포 대상 네임스페이스
+  annotations:
+    ignore-check.kube-linter.io/no-read-only-root-fs: "표준 nginx 이미지는 /var/cache 등 쓰기 권한이 필요함"
+    ignore-check.kube-linter.io/run-as-non-root: "표준 nginx 이미지는 80 포트 바인딩 및 초기 구동 시 root 권한이 필요함"
+spec:                            # ④ 원하는 상태(Desired State) 정의
+  serviceName: "web-service"     #    - 연결할 Headless Service 이름 (Pod별 고유 네트워크 도메인 부여에 필수)
+  replicas: 3                    #    - 항상 유지해야 할 Pod의 목표 수량 (3개: web-sts-0 ~ web-sts-2)
+  selector:                      #    - 관리할 Pod을 식별하기 위한 라벨 셀렉터
+    matchLabels:                 #      - 아래 라벨 조건을 만족하는 Pod을 감시/제어
+      app: web                   #        - 'app=web' 라벨을 가진 Pod 대상
+  template:                      # ⑤ Pod 템플릿 (PodTemplateSpec)
+    metadata:                    #    - 생성될 Pod의 메타데이터
+      labels:                    #      - 생성될 Pod에 부착될 라벨 (selector와 일치 필수)
+        app: web                 #        - 'app=web' 라벨 부여
+    spec:                        # ⑥ 개별 Pod의 실행 사양 (PodSpec)
+      # [kube-linter 해결 1: no-anti-affinity] Pod 안티-어피니티 설정 (복제본 분산 배치)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - web
+              topologyKey: kubernetes.io/hostname
+
+      # [kube-linter 참고] 표준 nginx 이미지는 /var/cache, /var/run 쓰기 및 80 포트 바인딩이 필요하므로
+      # 실습 환경에서는 어노테이션으로 룰을 예외 처리하고 기본 root 실행을 허용합니다.
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 10001
+
+      containers:                #    - 실행할 컨테이너 목록
+      - name: nginx              #      - 컨테이너 고유 식별 이름
+        image: nginx:1.27        #      - 실행할 컨테이너 이미지 및 버전 태그
+
+        # [kube-linter 참고] 표준 nginx 이미지는 /var/cache에 쓰기가 필요하므로 주석 처리
+        # securityContext:
+        #   readOnlyRootFilesystem: true
+
+        ports:
+        - containerPort: 80      #      - 컨테이너 포트
+          name: web
+
+        # [kube-linter 해결 4 & 5: unset-cpu-requirements, unset-memory-requirements]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+
+# [실습 테스트 가이드]
+# 1. StatefulSet 및 Pod 순차 생성 확인 (0번부터 순서대로 생성됨):
+# $ kubectl apply -f sf.yaml
+# $ kubectl get sts,pod -l app=web
+#
+# 2. Pod 하나 삭제 시 동일한 이름(인덱스)으로 자가 치유되는지 확인:
+# $ kubectl delete pod web-sts-0
+# $ kubectl get pod -l app=web -w
+#
+# 3. 개별 Pod의 고유 DNS 이름 확인 (클러스터 내부):
+# web-sts-0.web-service.default.svc.cluster.local

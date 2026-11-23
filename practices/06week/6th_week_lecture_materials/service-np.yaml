@@ -1,0 +1,29 @@
+#service-np.yaml
+apiVersion: v1                # ① 쿠버네티스 코어 API 버전
+kind: Service                 # ② 클러스터 외부에서 노드의 IP와 포트를 통해 Pod에 접근할 수 있도록 노출하는 Service
+metadata:
+  name: web-nodeport-service  # ③ Service의 고유 식별 이름
+  namespace: default          #    - 배포 대상 네임스페이스 (deployment.yaml의 namespace와 일치)
+  labels:                     #    - Service 리소스 분류/식별을 위한 라벨
+    app: web
+  annotations:                #    - kube-linter 단독 파일 검사 시 dangling-service 예외 처리
+    ignore-check.kube-linter.io/dangling-service: "deployment.yaml의 Pod(app: web)와 연동되는 서비스"
+spec:
+  type: NodePort              # ④ 서비스 유형: 모든 워커 노드의 지정된 포트(NodePort)를 외부에 개방
+  selector:
+    app: web                  # ⑤ deployment.yaml의 Pod 라벨(app: web)과 일치시켜 트래픽을 전달할 대상 Pod 지정
+  ports:
+    - protocol: TCP           # ⑥ 전송 프로토콜 (기본값: TCP)
+      port: 80                # ⑦ Service의 Cluster-IP에서 수신할 내부 포트
+      targetPort: 80          # ⑧ 실제 Pod 컨테이너의 포트 (deployment.yaml의 containerPort: 80과 일치)
+      nodePort: 30080         # ⑨ 모든 워커 노드의 외부 개방 포트 (30000~32767 범위, 생략 시 자동 할당)
+
+# [외부 접속 방법]
+# 1. 노드 IP 확인:
+#    $ kubectl get nodes -o wide  (INTERNAL-IP 확인)
+# 2. 클러스터 외부/노드 IP로 접속:
+#    http://<노드IP>:30080
+# 💡 kind 로컬 환경 실습 팁:
+#    kind는 노드가 Docker 컨테이너로 구동되므로, 로컬(호스트) 브라우저에서 가장 간편하게 접속하려면:
+#    $ kubectl port-forward svc/web-nodeport-service 30080:80
+#    브라우저 접속: http://localhost:30080

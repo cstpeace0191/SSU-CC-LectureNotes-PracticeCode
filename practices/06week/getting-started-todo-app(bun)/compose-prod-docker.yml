@@ -1,0 +1,80 @@
+###################################################
+# This Compose file provides the production environment for the todo app.
+#
+# Seeing the final version of the application bundles the frontend with the
+# backend, we are able to "simulate" that by using a proxy to route requests
+# to the appropriate service. All requests to /api will be routed to the 
+# backend while all other requests will be sent to the client service.
+#
+# Unlike compose-prod-build.yml, this file does NOT build images locally.
+# It pulls pre-built production images directly from Docker Hub:
+# (ssucloud/getting-started-todo-app:todo-backend)
+###################################################
+
+###################################################
+# Services
+#
+# The services define the individual components of our application stack.
+# For each service, a separate container will be launched.
+###################################################
+services:
+
+  ###################################################
+  # Service: proxy
+  #
+  # Traefik reverse proxy routing external port 80 traffic to the backend.
+  ###################################################
+  proxy:
+    image: traefik:v3.6
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  ###################################################
+  # Service: backend
+  #
+  # Docker Hub 원격 저장소(ssucloud/getting-started-todo-app:todo-backend)에서
+  # 프로덕션 번들 이미지를 직접 다운로드(pull)하여 실행합니다. (로컬 빌드 생략)
+  ###################################################
+  backend:
+    image: ssucloud/getting-started-todo-app:todo-backend
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: todos    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.backend.entrypoints: "web"
+      traefik.http.routers.backend.rule: "PathPrefix(`/`)"
+      traefik.http.services.backend.loadbalancer.server.port: "3000"
+
+  ###################################################
+  # Service: mysql
+  ###################################################
+  mysql:
+    image: mysql:9.3
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    environment: 
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: todos
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+###################################################
+# Volumes
+###################################################
+volumes:
+  todo-mysql-data:

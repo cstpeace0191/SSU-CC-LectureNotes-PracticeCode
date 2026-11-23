@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.fullname" . }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "todo-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "todo-app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            {{- if .Values.mysql.enabled }}
+            - name: MYSQL_HOST
+              value: {{ .Values.mysql.host | quote }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "todo-app.fullname" . }}-mysql-secret
+                  key: mysql-user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "todo-app.fullname" . }}-mysql-secret
+                  key: mysql-password
+            - name: MYSQL_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "todo-app.fullname" . }}-mysql-secret
+                  key: mysql-database
+            {{- else }}
+            - name: SQLITE_DB_LOCATION
+              value: {{ .Values.persistence.sqlite.storageLocation | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if and (not .Values.mysql.enabled) .Values.persistence.sqlite.enabled }}
+          volumeMounts:
+            - name: sqlite-storage
+              mountPath: /etc/todos
+          {{- end }}
+      {{- if and (not .Values.mysql.enabled) .Values.persistence.sqlite.enabled }}
+      volumes:
+        - name: sqlite-storage
+          emptyDir: {}
+      {{- end }}
+

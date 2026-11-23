@@ -1,0 +1,16 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: todo-cert
+spec:
+  domains:
+    - www.ssu-cloud-computing-gke.com
+    
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: todo-fc
+spec:
+  redirectToHttps:
+    enabled: false   # 로컬 hosts 테스트 시: false / 공인 도메인 DNS 등록 및 인증서 Active 완료 후: true

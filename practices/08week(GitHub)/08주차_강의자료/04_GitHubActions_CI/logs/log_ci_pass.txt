@@ -1,0 +1,61 @@
+
+━━━ job: backend  (backend (ruff + pytest))
+  ◇ uses actions/checkout  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ◇ uses actions/setup-python  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ✓ Install dependencies  (exit 0)
+  ✓ Lint (ruff)  (exit 0)
+  ✓ Test (pytest + coverage)  (exit 0)
+     │ src/routes/items.py              34      1    97%   37
+     │ -----------------------------------------------------------
+     │ TOTAL                           158     18    89%
+     │ Coverage XML written to file coverage.xml
+     │ Required test coverage of 80% reached. Total coverage: 88.61%
+     │ 19 passed in 0.51s
+  ✓ Coverage summary  (exit 0)
+  ◇ uses actions/upload-artifact  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+
+━━━ job: client  (client (eslint + build))
+  ◇ uses actions/checkout  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ◇ uses actions/setup-node  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ✓ npm ci --ignore-scripts  (exit 0)
+     │   npm audit fix
+     │ 
+     │ To address all issues (including breaking changes), run:
+     │   npm audit fix --force
+     │ 
+     │ Run `npm audit` for details.
+  ✓ npm run lint  (exit 0)
+     │ > client@0.0.0 lint
+     │ > eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0
+  ✓ npm run build  (exit 0)
+     │ computing gzip size...
+     │ dist/index.html                   0.62 kB │ gzip:  0.36 kB
+     │ dist/assets/index-BkVKuUx6.css  226.02 kB │ gzip: 30.55 kB
+     │ dist/assets/index-BvTeBFUH.js   270.24 kB │ gzip: 83.62 kB
+     │ ✓ built in 4.27s
+     │ Copied build files from /tmp/gitlab-sim/alice/client/dist to /tmp/gitlab-sim/alice/backend/src/static
+
+━━━ job: docker  (docker (multi-stage build))
+  ◇ uses actions/checkout  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ◇ uses docker/setup-buildx-action  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ◇ uses docker/build-push-action  → 로컬 대체(이미 checkout · python3.13 venv · node22)
+  ◇ Smoke test → Docker Hub 접근 불가 환경: tools/dockerfile_emulate.py 로 대체
+
+━━━ $GITHUB_STEP_SUMMARY ━━━
+### Backend coverage
+```
+Name                          Stmts   Miss  Cover
+-------------------------------------------------
+src/__init__.py                   0      0   100%
+src/main.py                      34     10    71%
+src/models.py                    13      0   100%
+src/persistence/__init__.py      13      1    92%
+src/persistence/sqlite.py        53      6    89%
+src/routes/__init__.py            3      0   100%
+src/routes/greeting.py            8      0   100%
+src/routes/items.py              34      1    97%
+-------------------------------------------------
+TOTAL                           158     18    89%
+```
+
+CI RESULT: PASS

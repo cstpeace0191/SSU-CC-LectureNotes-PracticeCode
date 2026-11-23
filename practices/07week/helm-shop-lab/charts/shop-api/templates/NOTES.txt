@@ -1,0 +1,13 @@
+shop-api {{ include "shop-api.imageTag" . }} 이(가) 네임스페이스 {{ .Release.Namespace }} 에 배포되었습니다. (리비전 {{ .Release.Revision }})
+
+1) 동작 확인
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "shop-api.fullname" . }} 8080:{{ .Values.service.port }}
+   curl localhost:8080/version
+   curl localhost:8080/items
+
+2) 마이그레이션 로그
+   kubectl -n {{ .Release.Namespace }} logs job/{{ include "shop-api.fullname" . }}-migrate
+
+3) 릴리스 이력과 롤백
+   helm history {{ .Release.Name }} -n {{ .Release.Namespace }}
+   helm rollback {{ .Release.Name }} <REVISION> -n {{ .Release.Namespace }}

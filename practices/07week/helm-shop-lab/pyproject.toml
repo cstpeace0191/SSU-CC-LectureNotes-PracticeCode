@@ -1,0 +1,7 @@
+[project]
+name = "helm-shop-lab"
+version = "0.1.0"
+description = "helm-shop-lab Python code package"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

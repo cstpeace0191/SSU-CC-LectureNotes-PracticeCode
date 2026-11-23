@@ -1,0 +1,44 @@
+# [사례 6 비교용] Push 방식 배포: CI 러너가 클러스터에 직접 helm upgrade 한다.
+# GitOps(Argo CD, Pull 방식)와 비교하기 위한 예제로, 수동 실행(workflow_dispatch)만 허용한다.
+# 필요 시크릿: KUBECONFIG_B64 (base64 로 인코딩한 kubeconfig)
+name: deploy-helm-push
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "배포 환경"
+        type: choice
+        options: [dev, prod]
+        default: dev
+      tag:
+        description: "이미지 태그 (예: sha-1a2b3c4)"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}   # prod 는 GitHub Environment 승인 규칙을 걸어 둔다
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+      - name: diff (변경 미리보기)
+        run: |
+          helm plugin install https://github.com/databus23/helm-diff || true
+          helm diff upgrade shop-api charts/shop-api \
+            -n shop-${{ inputs.environment }} \
+            -f charts/shop-api/values-${{ inputs.environment }}.yaml \
+            --set image.tag=${{ inputs.tag }} --allow-unreleased || true
+      - name: helm upgrade --install --atomic
+        run: |
+          helm upgrade --install shop-api charts/shop-api \
+            -n shop-${{ inputs.environment }} --create-namespace \
+            -f charts/shop-api/values-${{ inputs.environment }}.yaml \
+            --set image.tag=${{ inputs.tag }} \
+            --atomic --wait --timeout 5m
+      - name: helm test
+        run: helm test shop-api -n shop-${{ inputs.environment }}

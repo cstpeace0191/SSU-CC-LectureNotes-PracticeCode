@@ -1,0 +1,26 @@
+# 실습 전용 PostgreSQL. 운영에서는 관리형 DB(RDS, Cloud SQL 등)나 오퍼레이터(CloudNativePG)를 쓴다.
+image:
+  repository: postgres          # Docker 공식 이미지 (Bitnami 정책 변경의 영향을 받지 않음)
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+auth:
+  database: shop
+  username: shop
+  # 실습 편의를 위한 기본값 — 반드시 --set auth.password=... 로 바꾸거나 existingSecret 사용
+  password: "change-me-dev"
+  # shop-api 차트의 database.existingSecret 과 같은 이름이어야 한다
+  secretName: shop-db-credentials
+  existingSecret: false         # true 면 Secret 을 만들지 않고 이미 있는 secretName 을 사용
+
+persistence:
+  size: 1Gi
+  storageClass: ""              # 비우면 클러스터 기본 StorageClass
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

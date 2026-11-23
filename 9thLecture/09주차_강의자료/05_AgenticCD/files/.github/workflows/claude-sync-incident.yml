@@ -1,0 +1,37 @@
+name: Claude sync incident
+
+on:
+  repository_dispatch:
+    types: [argocd-sync-failed]      # Argo CD Notifications 가 보내는 이벤트
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 20
+          persist-credentials: false
+      - name: Save event payload
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: printf '%s' "$PAYLOAD" > /tmp/argocd-event.json
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            /tmp/argocd-event.json 은 Argo CD 동기화 실패 알림이다(app, revision, message 포함).
+            1) git log 로 해당 revision 을 만든 커밋과 변경 내용을 찾는다.
+            2) 원인을 추정해 이슈를 하나 연다 (제목: "[incident] <app> sync failed").
+            3) 직전 커밋이 원인으로 보이면 그 커밋을 git revert 하는 브랜치 incident/<app>-<revision 앞 7자리> 를 만들고
+               롤백 PR 을 연다. 병합은 사람이 한다.
+          claude_args: '--max-turns 15 --allowedTools "Read,Bash(git log:*),Bash(git show:*),Bash(git revert:*),Bash(git switch:*),Bash(git push:*),Bash(gh issue create:*),Bash(gh pr create:*)"'

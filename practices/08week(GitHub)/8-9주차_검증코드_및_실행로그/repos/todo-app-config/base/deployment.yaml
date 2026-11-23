@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app
+  labels:
+    app.kubernetes.io/name: todo-app
+spec:
+  replicas: 1                      # SQLite 파일 DB → 파드 1개
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: todo-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: todo-app
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:latest
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: SQLITE_DB_LOCATION
+              value: /data/todo.db
+          readinessProbe:
+            httpGet:
+              path: /api/greeting
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/greeting
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          emptyDir: {}              # 학습용: 파드 재시작 시 데이터 유실
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,19 @@
+#service-cip.yaml
+apiVersion: v1                # ① 쿠버네티스 코어 API 버전
+kind: Service                 # ② Pod 집합에 고정된 내부 가상 IP(VIP) 및 DNS 이름을 부여하는 Service 리소스
+metadata:
+  name: web-service           # ③ Service의 고유 식별 이름 (클러스터 내부 DNS: web-service.default.svc.cluster.local)
+  namespace: default          #    - 배포 대상 네임스페이스 (deployment.yaml의 namespace와 일치)
+  labels:                     #    - Service 리소스 분류/식별을 위한 라벨
+    app: web
+  annotations:                #    - kube-linter 단독 파일 검사 시 dangling-service 예외 처리
+    ignore-check.kube-linter.io/dangling-service: "deployment.yaml의 Pod(app: web)와 연동되는 서비스"
+spec:
+  type: ClusterIP              # ④ 서비스 유형: 서비스 유형: 클러스터 내부 통신 전용 가상 IP 생성 (기본값)
+  selector:
+    app: web                  # ⑤ deployment.yaml의 Pod 라벨(app: web)과 일치시켜 트래픽을 전달할 대상 Pod 지정
+  ports:
+    - protocol: TCP           # ⑥ 전송 프로토콜 (기본값: TCP)
+      port: 80                # ⑦ Service가 클러스터 내부에서 노출하는 포트 (클라이언트가 접속할 포트)
+      targetPort: 80          # ⑦ 실제 Pod의 컨테이너 내부 포트 (deployment.yaml의 containerPort: 80과 일치)
+  

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    katenary.v3/compose-hash: a1a02d775f5ee2f41f5d1004dc69b3414329b336
+    katenary.v3/version: master
+  labels:
+    {{- include "getting-started-todo-app.labels" . | nindent 4 }}
+    katenary.v3/component: mysql
+  name: '{{ include "getting-started-todo-app.fullname" . }}-mysql'
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+    protocol: TCP
+    targetPort: mysql
+  selector:
+    {{- include "getting-started-todo-app.selectorLabels" . | nindent 4 }}
+    katenary.v3/component: mysql

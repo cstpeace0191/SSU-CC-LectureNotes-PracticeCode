@@ -1,0 +1,21 @@
+$ git push origin main
+To https://github.com/cstpeace0191/getting-started-todo-app-fastapi.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/cstpeace0191/getting-started-todo-app-fastapi.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+$ git pull --rebase origin main
+From https://github.com/cstpeace0191/getting-started-todo-app-fastapi
+ * branch            main       -> FETCH_HEAD
+   163e71e..891cfd4  main       -> origin/main
+Rebasing (1/1)[KSuccessfully rebased and updated refs/heads/main.
+$ git log --oneline -3
+4265fa8 docs: add lab checklist to README
+891cfd4 docs: add CONTRIBUTING.md
+163e71e feat(api): filter items by ?completed=true|false (#3)
+$ git push origin main
+To https://github.com/cstpeace0191/getting-started-todo-app-fastapi.git
+   891cfd4..4265fa8  main -> main

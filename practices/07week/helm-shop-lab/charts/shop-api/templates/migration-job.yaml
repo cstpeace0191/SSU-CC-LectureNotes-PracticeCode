@@ -1,0 +1,50 @@
+{{- if .Values.migration.enabled }}
+# [사례 5] DB 스키마 마이그레이션 훅
+#  - pre-install/pre-upgrade : 새 버전 Pod 가 뜨기 "전에" 스키마를 먼저 맞춘다
+#  - Job 이 실패하면 helm upgrade 가 중단되어 구버전 Pod 가 그대로 서비스된다
+#  - Argo CD 는 이 두 훅을 PreSync 훅으로 해석하므로 GitOps 에서도 같은 순서가 유지된다
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "shop-api.fullname" . }}-migrate
+  labels:
+    {{- include "shop-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "shop-api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          # 앱과 "같은 이미지"를 사용 → 코드와 스키마 버전이 항상 짝을 이룬다
+          image: {{ include "shop-api.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.migration.command | nindent 12 }}
+          env:
+            {{- include "shop-api.databaseEnv" . | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

@@ -1,0 +1,3 @@
+@tasks.me 의 Task list, T001~T034 를 Issues  로 등록해줘.
+
+cstpeace0191/spec-geeting-started-todo-app 의 [이슈 링크 또는 #번호]를 확인하고, 원인을 분석해 현재 브랜치에서 수정해줘. 관련 테스트도 실행하고 변경 사항을 요약해줘. 또한, PR 도 작성해줘.

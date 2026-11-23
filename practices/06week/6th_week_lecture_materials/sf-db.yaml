@@ -1,0 +1,103 @@
+# sf-db.yaml
+# 1. StatefulSet 개별 Pod 식별 및 통신을 위한 Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: db                    # StatefulSet spec.serviceName="db" 및 init-sidecar.yaml의 DB_HOST="db"와 일치
+  namespace: default
+  labels:
+    app: db
+    tier: database
+spec:
+  clusterIP: None             # Headless Service 설정 (단일 VIP 없이 Pod별 고유 DNS db-0.db, db-1.db 생성)
+  selector:
+    app: db
+  ports:
+  - name: mysql
+    port: 3306                # MySQL 기본 포트
+    targetPort: 3306
+---
+# 2. MySQL 데이터베이스 StatefulSet 정의
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: default
+  labels:
+    app: db
+    tier: database
+spec:
+  serviceName: db             # 위에서 정의한 Headless Service(name: db)와 매핑
+  replicas: 3                 # db-0 -> db-1 -> db-2 순서로 순차 생성
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+        tier: database
+    spec:
+      # [고가용성 분산 배치] DB Pod들이 서로 다른 노드에 분산되도록 Anti-Affinity 설정
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - db
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - name: mysql
+          containerPort: 3306
+          protocol: TCP
+        env:
+        # [상호동작 일치] todo-backend에서 접속할 root 비밀번호
+        - name: MYSQL_ROOT_PASSWORD
+          value: "password123!"
+        # [상호동작 일치] todo-backend에서 연결할 초기 데이터베이스 자동 생성
+        - name: MYSQL_DATABASE
+          value: "tododb"
+
+        # 컴퓨팅 리소스 요청량 및 제한선
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        # 헬스체크 프로브 (MySQL 정상 가동 확인)
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+
+  # Pod마다 독립적인 영구 볼륨(PV/PVC)을 자동 생성/바인딩
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 1Gi

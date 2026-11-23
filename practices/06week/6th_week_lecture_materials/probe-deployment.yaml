@@ -1,0 +1,81 @@
+# probe-deployment.yaml
+# 애플리케이션의 고가용성 및 무중단 배포를 위한 Deployment 매니페스트 (nginx:1.27 기반 3대 프로브 적용)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+  labels:
+    app: nginx
+  annotations:
+    ignore-check.kube-linter.io/no-read-only-root-fs: "표준 nginx 이미지는 /var/cache 등 쓰기 권한이 필요함"
+    ignore-check.kube-linter.io/run-as-non-root: "표준 nginx 이미지는 80 포트 바인딩 및 초기 구동 시 root 권한이 필요함"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      # [kube-linter 해결 1: no-anti-affinity] Pod 안티-어피니티 설정 (동일 노드 집중 방지)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nginx
+              topologyKey: kubernetes.io/hostname
+
+      # [kube-linter 참고] 표준 nginx 이미지는 /var/cache, /var/run 쓰기 및 80 포트 바인딩이 필요하므로
+      # 어노테이션으로 룰을 예외 처리하고 기본 root 실행을 허용합니다.
+
+      containers:
+      - name: nginx
+        image: nginx:1.27
+
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+
+        # ① 시작 프로브 (startupProbe)
+        # Nginx 기본 웹서버 포트(80) 및 기본 경로(/)로 구동 여부 확인
+        # 성공 전까지 livenessProbe 및 readinessProbe 동작을 보류함
+        startupProbe:
+          httpGet:
+            path: /
+            port: 80
+          failureThreshold: 30  # 실패 허용 횟수 (최대 2초 x 30 = 60초 대기)
+          periodSeconds: 2      # 점검 주기 (2초)
+
+        # ② 준비 완료 프로브 (readinessProbe)
+        # Nginx가 요청(트래픽)을 처리할 준비가 되었는지 5초 주기로 확인
+        # 실패 시 Service 엔드포인트에서 제외하여 트래픽 인입 차단
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 5      # 점검 주기 (5초)
+
+        # ③ 활성 프로브 (livenessProbe)
+        # Nginx 프로세스가 정상 동작 중인지 10초 주기로 확인
+        # 응답 불가 시 컨테이너를 강제 재시작하여 자동 복구
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10 # 최초 점검 전 대기 시간 (10초)
+          periodSeconds: 10       # 점검 주기 (10초)

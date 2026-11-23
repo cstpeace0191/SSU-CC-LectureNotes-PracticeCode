@@ -1,0 +1,6 @@
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET / HTTP/1.1" 200 635 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET /assets/index-B1KJ-TSY.js HTTP/1.1" 200 269842 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET /assets/index-BkVKuUx6.css HTTP/1.1" 200 226017 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET /api/greeting HTTP/1.1" 200 27 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET /api/items HTTP/1.1" 200 79 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+127.0.0.1 - - [20/Jul/2026:19:09:49 +0900] "GET /vite.svg HTTP/1.1" 200 1497 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"

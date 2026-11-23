@@ -1,0 +1,23 @@
+$ cat .git/HEAD
+ref: refs/heads/main
+$ git rev-parse HEAD main origin/main v0.2.0^{commit}
+8ef8077ca54af6f7f4f06058159ea24087eabd80
+8ef8077ca54af6f7f4f06058159ea24087eabd80
+163e71e8b386a7517387f546d8eb6525dca37c57
+163e71e8b386a7517387f546d8eb6525dca37c57
+$ git show-ref --heads --tags
+163e71e8b386a7517387f546d8eb6525dca37c57 refs/heads/feat/3-completed-filter
+8ef8077ca54af6f7f4f06058159ea24087eabd80 refs/heads/main
+5b000efaa0ffe4cc704e6cb9eb5229d9ba83848d refs/tags/v0.1.0
+db3c70743eaf12426b96a2c2b8b12512465600df refs/tags/v0.2.0
+$ git count-objects -vH
+count: 192
+size: 3.05 MiB
+in-pack: 0
+packs: 0
+size-pack: 0 bytes
+prune-packable: 0
+garbage: 0
+size-garbage: 0 bytes
+$ ls .git
+COMMIT_EDITMSG FETCH_HEAD HEAD ORIG_HEAD REBASE_HEAD branches config description hooks index info logs objects packed-refs refs 

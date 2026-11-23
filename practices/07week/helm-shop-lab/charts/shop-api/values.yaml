@@ -1,0 +1,89 @@
+# ---------------------------------------------------------------
+# shop-api 기본값 (모든 환경 공통). 환경별 차이는 values-<env>.yaml 에서 덮어쓴다.
+# ---------------------------------------------------------------
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cstpeace0191/shop-api   # 실습 시 본인 GitHub 계정으로 변경
+  tag: ""                                      # 비어 있으면 Chart.appVersion 사용
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# 애플리케이션 설정 → ConfigMap 으로 주입 (변경 시 checksum 으로 자동 롤링 재시작)
+config:
+  greeting: "Hello from shop-api"
+  logLevel: info
+
+# DB 접속 정보 — 비밀번호는 values 에 두지 않고 기존 Secret 을 참조한다
+database:
+  host: shop-db            # shop-db 릴리스의 Service 이름
+  port: 5432
+  name: shop
+  user: shop
+  existingSecret: shop-db-credentials
+  passwordKey: password
+
+# [사례 5] 스키마 마이그레이션 훅 Job
+migration:
+  enabled: true
+  command: ["python", "migrate.py"]
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""             # 클러스터에 설치된 IngressClass (예: traefik)
+  host: shop.local
+  tls: false
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,17 @@
+# test-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-test-pod
+spec:
+  containers:
+  - name: test
+    image: busybox
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: my-storage
+      mountPath: /data          # 컨테이너 내부 저장 경로
+  volumes:
+  - name: my-storage
+    persistentVolumeClaim:
+      claimName: fast-pvc       # 위에서 만든 fast-pvc 연결

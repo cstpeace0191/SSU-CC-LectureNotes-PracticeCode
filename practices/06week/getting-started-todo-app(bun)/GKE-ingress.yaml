@@ -1,0 +1,20 @@
+#GKE-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-backend-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    # 내부 LB: "gce-internal"
+spec:
+  rules:
+  - host: www.ssu-cloud-computing.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: todo-backend-lb  
+            port:
+              number: 80          # 서비스 포트 번호 지정 (필수)

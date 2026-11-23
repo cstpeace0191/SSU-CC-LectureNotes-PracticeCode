@@ -1,0 +1,67 @@
+#deployment.yaml
+apiVersion: apps/v1           # ① 워크로드(앱) 관리를 위한 API 그룹 및 버전
+kind: Deployment              # ② Pod 복제본 관리 및 무중단 배포를 관장하는 컨트롤러
+metadata:                     # ③ Deployment 자체를 식별하고 정보를 부여하는 메타데이터
+  name: web                   #    - Deployment의 고유 이름
+  namespace: default          #    - 배포 대상 네임스페이스 (기본: default)
+  labels:                     #    - Deployment 리소스를 분류/식별하기 위한 라벨
+    app: web                  #      - 'app=web' 라벨
+  annotations:                #    - 시스템/운영 도구가 참조하는 비식별 부가 정보
+    team: platform            #      - 관리 부서/팀 정보 ('team=platform')
+    ignore-check.kube-linter.io/no-read-only-root-fs: "표준 nginx 이미지는 /var/cache 등 쓰기 권한이 필요함"
+    ignore-check.kube-linter.io/run-as-non-root: "표준 nginx 이미지는 80 포트 바인딩 및 초기 구동 시 root 권한이 필요함"
+spec:                         # ④ 원하는 상태(Desired State) 정의 (Deployment 자체 사양)
+  replicas: 3                 #    - 항시 유지할 Pod 복제본(Replicas) 개수
+  revisionHistoryLimit: 10    #    - 롤백을 위해 유지할 과거 배포 이력(ReplicaSet) 보관 개수 (기본값: 10)
+  strategy:
+    type: RollingUpdate       #    - 롤링 업데이트 방식 (기본값: 무중단 점진적 교체)
+    rollingUpdate:
+      maxSurge: 25%           #    - 배포 중 목표 Replicas를 초과하여 추가 생성 가능한 Pod 비율
+      maxUnavailable: 25%     #    - 배포 중 일시적으로 사용 불가능해도 되는 Pod 비율
+  minReadySeconds: 5          #    - 새 Pod 생성 후 Crash 없이 정상 작동하는지 대기/검증하는 최소 시간(초)
+  selector:                   #    - 관리 대상 Pod을 찾아내기 위한 라벨 셀렉터
+    matchLabels:              #      - 아래 라벨과 완전히 일치하는 Pod을 감시/관리
+      app: web                #        - 'app=web' 라벨을 가진 Pod 대상
+  template:                   # ⑤ 신규 Pod을 생성할 때 사용할 설계도 (PodTemplateSpec)
+    metadata:                 #    - 생성될 Pod의 메타데이터
+      labels:                 #      - 생성될 Pod에 부여할 라벨 (selector와 반드시 일치)
+        app: web              #        - 'app=web' 라벨 부여
+    spec:                     # ⑥ 개별 Pod의 구체적인 실행 사양 (PodSpec)
+      # [kube-linter 해결 1: no-anti-affinity] Pod 안티-어피니티 설정 (복제본 Pod들을 서로 다른 노드에 분산 배치)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - web
+              topologyKey: kubernetes.io/hostname
+
+      # [kube-linter 참고] 표준 nginx 이미지는 /var/cache, /var/run 쓰기 및 80 포트 바인딩이 필요하므로
+      # 실습 환경에서는 어노테이션으로 룰을 예외 처리하고 기본 root 실행을 허용합니다.
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 10001
+
+      containers:             #    - Pod 내부에서 실행될 컨테이너 목록
+      - name: nginx           #      - 컨테이너 고유 식별 이름
+        image: nginx:1.27     #      - 실행할 컨테이너 이미지 및 버전 태그
+
+        # [kube-linter 참고] 표준 nginx 이미지는 /var/cache에 쓰기가 필요하므로 주석 처리
+        # securityContext:
+        #   readOnlyRootFilesystem: true
+
+        ports:                #      - 컨테이너가 개방할 포트 목록
+        - containerPort: 80   #        - 컨테이너 내부 수신 포트 번호 (HTTP 기본 80)
+        resources:            #      - 컨테이너 컴퓨팅 자원 할당 정책
+          requests:           #        - 스케줄링 시 보장받는 최소 자원 (요청량)
+            cpu: 100m         #          - CPU 100밀리코어 (0.1 코어)
+            memory: 128Mi     #          - 메모리 128 메비바이트
+          limits:             #        - 컨테이너가 사용할 수 있는 최대 자원 (제한량)
+            memory: 256Mi     #          - 메모리 256 메비바이트 (초과 시 OOMKill)
+# status:                     # ⑦ 클러스터 컨트롤러가 현재 상태를 실시간 기록하는 영역
+#   readyReplicas: 3          #    → 사용자가 작성하지 않으며 쿠버네티스가 자체 업데이트함

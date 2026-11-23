@@ -1,0 +1,6 @@
+apiVersion: v2
+name: shop-db
+description: 실습용 단일 인스턴스 PostgreSQL (공식 postgres 이미지 사용, 운영용 아님)
+type: application
+version: 0.1.0
+appVersion: "16"

@@ -1,0 +1,45 @@
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "private": true,
+    "main": "src/index.js",
+    "scripts": {
+        "test": "jest --coverage",
+        "dev": "nodemon src/index.js",
+        "start": "node src/index.js",
+        "format": "prettier --config ../.prettierrc --write \"src/**/*.js\" \"spec/**/*.js\"",
+        "format-check": "prettier --config ../.prettierrc --check \"src/**/*.js\" \"spec/**/*.js\""
+    },
+    "dependencies": {
+        "express": "^5.1.0",
+        "mysql2": "^3.14.1",
+        "sqlite3": "^5.1.7",
+        "uuid": "^11.1.0",
+        "wait-port": "^1.1.0"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0",
+        "nodemon": "^3.0.3",
+        "prettier": "^3.2.4"
+    },
+    "resolutions": {
+        "@babel/core": "7.23.9"
+    },
+    "overrides": {
+        "@babel/core": "7.23.9"
+    },
+    "jest": {
+        "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.jsx?$",
+        "collectCoverageFrom": [
+            "src/**/*.js"
+        ],
+        "coverageThreshold": {
+            "global": {
+                "branches": 80,
+                "functions": 80,
+                "lines": 80,
+                "statements": 80
+            }
+        }
+    }
+}

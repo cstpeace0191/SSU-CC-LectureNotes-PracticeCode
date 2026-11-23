@@ -1,0 +1,16 @@
+# helm test <릴리스> 로 실행 — /items 가 200 을 반환하는지 확인
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "shop-api.fullname" . }}-test
+  labels:
+    {{- include "shop-api.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: curl
+      image: curlimages/curl:8.10.1
+      args: ["-fsS", "http://{{ include "shop-api.fullname" . }}:{{ .Values.service.port }}/items"]

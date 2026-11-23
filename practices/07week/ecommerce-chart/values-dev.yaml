@@ -1,0 +1,16 @@
+global:
+  env: dev
+
+orderService:
+  replicaCount: 1
+  image:
+    repository: myregistry.io/order-api
+    tag: "dev-latest"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  enabled: true
+  architecture: standalone   # 개발용은 단일 노드로 비용 절감

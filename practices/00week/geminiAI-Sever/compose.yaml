@@ -1,0 +1,70 @@
+services:
+  # ─────────────────────────────────────────────
+  # Traefik 리버스 프록시 (Reverse Proxy)
+  # ─────────────────────────────────────────────
+  traefik:
+    image: traefik:latest
+    container_name: gemini-traefik
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "3000:80"      # 클라이언트 웹 및 API 서비스 엔트리포인트 (http://localhost:3000)
+      - "8080:8080"    # Traefik 대시보드 (선택적 모니터링)
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - gemini-net
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # 백엔드 서비스 (FastAPI + uv + Gemini AI)
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gemini-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    labels:
+      - "traefik.enable=true"
+      # API 엔드포인트는 백엔드로 라우팅 (우선순위 100)
+      - "traefik.http.routers.backend.rule=PathPrefix(`/chat`) || PathPrefix(`/reset`) || PathPrefix(`/health`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.priority=100"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - gemini-net
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # 프론트엔드 서비스 (React + Vite + Nginx)
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gemini-frontend
+    labels:
+      - "traefik.enable=true"
+      # 나머지 모든 웹 트래픽은 프론트엔드로 라우팅 (우선순위 1)
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    depends_on:
+      - backend
+    networks:
+      - gemini-net
+    restart: unless-stopped
+
+networks:
+  gemini-net:
+    driver: bridge

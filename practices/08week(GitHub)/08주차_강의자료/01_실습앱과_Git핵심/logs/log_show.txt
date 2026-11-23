@@ -1,0 +1,32 @@
+$ git show --stat --format="%h %an %ad%n    %s" --date=short 163e71e
+163e71e cstpeace0191 2026-11-18
+    feat(api): filter items by ?completed=true|false (#3)
+
+ backend/spec/routes/test_filterItems.py | 38 +++++++++++++++++++++++++++++++++
+ backend/src/routes/items.py             |  7 ++++--
+ 2 files changed, 43 insertions(+), 2 deletions(-)
+$ git show 163e71e -- backend/src/routes/items.py
+diff --git a/backend/src/routes/items.py b/backend/src/routes/items.py
+index a14fee1..fbadbe7 100755
+--- a/backend/src/routes/items.py
++++ b/backend/src/routes/items.py
+@@ -1,5 +1,5 @@
+ import uuid
+-from typing import List
++from typing import List, Optional
+ from fastapi import APIRouter, HTTPException, Response, status
+ from ..models import Item, ItemCreate, ItemUpdate
+ from .. import persistence as db
+@@ -9,8 +9,11 @@ router = APIRouter(tags=["items"])
+ 
+ @router.get("/api/items", response_model=List[Item])
+ @router.get("/items", response_model=List[Item], include_in_schema=False)
+-async def get_items():
++async def get_items(completed: Optional[bool] = None):
++    """완료 여부로 필터링: /api/items?completed=true|false (생략 시 전체)"""
+     items = await db.get_items()
++    if completed is not None:
++        items = [item for item in items if item["completed"] == completed]
+     return sorted(items, key=lambda item: item["completed"])  # 미완료 항목 먼저
+ 
+ 

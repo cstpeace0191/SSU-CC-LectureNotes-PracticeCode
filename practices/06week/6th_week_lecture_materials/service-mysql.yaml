@@ -1,0 +1,13 @@
+# service-mysql.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql                 # 다른 파드가 접속할 DNS 호스트 이름 (예: host: "mysql")
+  namespace: default
+spec:
+  type: ClusterIP             # 클러스터 내부 통신 전용 가상 IP 생성
+  selector:
+    app: mysql                # mysql.yaml의 Pod 라벨(app: mysql)과 연결
+  ports:
+  - port: 3306                # Service 수신 포트
+    targetPort: 3306          # MySQL 컨테이너 내부 포트

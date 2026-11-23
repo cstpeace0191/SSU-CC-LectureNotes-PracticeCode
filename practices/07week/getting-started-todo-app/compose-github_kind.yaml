@@ -1,0 +1,58 @@
+services:
+
+  proxy:
+    image: traefik:v3.6
+    command: --providers.docker
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      katenary.v3/ignore: "true"
+
+  backend:
+    image: ghcr.io/cstpeace0191/ssu-cloud-computing/todo-backend:prod
+    ports:
+      - 3000:3000
+    expose:
+      - 3000
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: todos    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    labels:
+      katenary.v3/map-env: |-
+        MYSQL_HOST: '{{ include "__APP__.fullname" . }}-mysql'
+      traefik.enable: "true"
+      traefik.http.routers.backend-http.entrypoints: "web"
+      traefik.http.routers.backend-http.rule: "PathPrefix(`/`)"
+      traefik.http.routers.backend-http.service: "backend-service"
+      traefik.http.routers.backend-https.entrypoints: "websecure"
+      traefik.http.routers.backend-https.rule: "PathPrefix(`/`)"
+      traefik.http.routers.backend-https.tls: "true"
+      traefik.http.routers.backend-https.service: "backend-service"
+      traefik.http.services.backend-service.loadbalancer.server.port: "3000"
+
+  mysql:
+    image: mysql:9.3
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    environment: 
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: todos
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  todo-mysql-data:

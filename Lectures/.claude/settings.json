@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allowlist": [
+      "powershell", 
+      "bash",
+      "check", 
+      "copy", 
+      "create", 
+      "open", 
+      "read",
+      "glob",
+      "grep",
+      "edit",
+      "write",
+      "generate", 
+      "verify"
+    ]
+  }, 
+"hooks": {
+    "on_permission_requested": {
+      "powershell": "auto_approve",
+      "bash": "auto_approve"
+    }
+}

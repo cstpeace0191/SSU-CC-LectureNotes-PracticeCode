@@ -1,0 +1,15 @@
+apiVersion: v1
+data:
+  MYSQL_DB: todos
+  MYSQL_HOST: '{{ include "getting-started-todo-app.fullname" . }}-mysql'
+  MYSQL_PASSWORD: secret
+  MYSQL_USER: root
+kind: ConfigMap
+metadata:
+  annotations:
+    katenary.v3/compose-hash: a1a02d775f5ee2f41f5d1004dc69b3414329b336
+    katenary.v3/version: master
+  labels:
+    {{- include "getting-started-todo-app.labels" . | nindent 4 }}
+    katenary.v3/component: backend
+  name: '{{ include "getting-started-todo-app.fullname" . }}-backend'

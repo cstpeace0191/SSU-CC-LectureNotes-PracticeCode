@@ -1,0 +1,22 @@
+{{- if .Values.mysql.persistence.todo_mysql_data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 3563f45c5d6a61d1cb919f403e3bc2fdf2dae588
+    katenary.v3/version: 3.0.0-rc6
+  labels:
+    {{- include "getting-started-todo-app.labels" . | nindent 4 }}
+    katenary.v3/component: mysql
+  name: '{{ include "getting-started-todo-app.fullname" . }}-mysql-todo-mysql-data'
+spec:
+  accessModes:
+  {{- .Values.mysql.persistence.todo_mysql_data.accessMode | toYaml | nindent 2 }}
+  resources:
+    requests:
+      storage: {{ tpl .Values.mysql.persistence.todo_mysql_data.size $ }}
+  {{- if ne .Values.mysql.persistence.todo_mysql_data.storageClass "-" }}
+  storageClassName: '{{ .Values.mysql.persistence.todo_mysql_data.storageClass }}'
+  {{- end }}
+
+{{- end }}

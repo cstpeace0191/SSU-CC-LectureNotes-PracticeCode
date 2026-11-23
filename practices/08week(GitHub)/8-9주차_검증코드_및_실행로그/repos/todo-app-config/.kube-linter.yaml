@@ -1,0 +1,12 @@
+checks:
+  addAllBuiltIn: false
+  include:
+    - run-as-non-root
+    - no-read-only-root-fs
+    - privilege-escalation-container
+    - unset-cpu-requirements
+    - unset-memory-requirements
+    - no-liveness-probe
+    - no-readiness-probe
+    - latest-tag
+    - dangling-service

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 2f8fafa6a24db389e66da1c69e70592413ac62d8
+    katenary.v3/version: master
+  labels:
+    {{- include "getting-started-todo-app.labels" . | nindent 4 }}
+    katenary.v3/component: mysql
+  name: '{{ include "getting-started-todo-app.fullname" . }}-mysql'
+spec:
+  replicas: {{ .Values.mysql.replicas }}
+  selector:
+    matchLabels:
+      {{- include "getting-started-todo-app.selectorLabels" . | nindent 6 }}
+      katenary.v3/component: mysql
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        {{- include "getting-started-todo-app.selectorLabels" . | nindent 8 }}
+        katenary.v3/component: mysql
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: '{{ include "getting-started-todo-app.fullname" . }}-mysql'
+        image: '{{ tpl .Values.mysql.repository.image $ }}:{{ tpl .Values.mysql.repository.tag $ | default "latest" }}'
+        imagePullPolicy: {{ .Values.mysql.imagePullPolicy }}
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          periodSeconds: 5
+        name: mysql
+        ports:
+        - containerPort: 3306
+          name: mysql
+        {{- if .Values.mysql.resources }}
+        resources:
+          {{ .Values.mysql.resources | toYaml | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.mysql.persistence.todo_mysql_data.enabled }}
+        - mountPath: /var/lib/mysql
+          name: todo-mysql-data
+        {{- end }}
+      {{- if .Values.pullSecrets }}
+      imagePullSecrets:
+      {{- .Values.pullSecrets | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mysql.nodeSelector }}
+      nodeSelector:
+        {{- .Values.mysql.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if ne .Values.mysql.serviceAccount "" }}
+      serviceAccountName: {{ .Values.mysql.serviceAccount | quote }}
+      {{- end }}
+      volumes:
+      {{- if .Values.mysql.persistence.todo_mysql_data.enabled }}
+      - name: todo-mysql-data
+        persistentVolumeClaim:
+          claimName: '{{ include "getting-started-todo-app.fullname" . }}-mysql-todo-mysql-data'
+      {{- end }}

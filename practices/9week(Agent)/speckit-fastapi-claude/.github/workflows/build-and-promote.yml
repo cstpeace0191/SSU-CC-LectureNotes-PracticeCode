@@ -1,0 +1,197 @@
+# ==============================================================================
+# Build and Promote — 이미지 빌드 → Config 저장소에 PR
+#
+# GitOps(Pull) 방식의 CI 마지막 단계입니다. 이 워크플로는 클러스터에 접근하지 않습니다.
+#   1) build   : Docker 이미지를 빌드(테스트 stage 포함)하고 커밋 SHA 태그로 Artifact Registry에 push
+#   2) promote : Config 저장소 overlays/<env>/kustomization.yaml 의 images[].newTag 를 바꾸는 PR 생성
+# PR이 머지되면 클러스터 안의 Argo CD가 Config 저장소 변경을 감지해 동기화합니다.
+#
+# 승격 흐름 (dev → stg → prod)
+#   - main 푸시          : 새 이미지 빌드 → dev 승격 PR (자동)
+#   - 수동 실행(Run workflow): target_env=stg|prod, image_tag=<dev에서 검증한 SHA>
+#                          → 빌드 없이 해당 태그로 승격 PR만 생성
+#
+# 필요한 설정 (Settings → Secrets and variables → Actions)
+#   - secrets.GCP_SA_KEY        : Artifact Registry push 권한이 있는 서비스 계정 키 (deploy.yml과 동일)
+#   - secrets.CONFIG_REPO_TOKEN : Config 저장소 전용 Fine-grained PAT
+#                                 (Repository access: speckit-fastapi-claude-config 하나,
+#                                  Permissions: Contents = Read and write, Pull requests = Read and write)
+# ==============================================================================
+name: Build and Promote
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'client/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/build-and-promote.yml'
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: '승격 대상 환경'
+        type: choice
+        options: [dev, stg, prod]
+        default: dev
+      image_tag:
+        description: '승격할 기존 이미지 태그 (커밋 SHA). 비우면 현재 커밋을 새로 빌드'
+        type: string
+        required: false
+        default: ''
+
+# GITHUB_TOKEN은 App 저장소 읽기만 필요. Config 저장소 쓰기는 CONFIG_REPO_TOKEN으로 한다.
+permissions:
+  contents: read
+
+# 승격 PR이 순서대로 만들어지도록 동시 실행 방지 (진행 중인 실행은 취소하지 않음)
+concurrency:
+  group: build-and-promote
+  cancel-in-progress: false
+
+env:
+  GAR_LOCATION: asia-northeast3                       # Artifact Registry 리전 (서울)
+  PROJECT_ID: ssu-agent-vertex-509708                 # GCP 프로젝트 ID
+  REPOSITORY: suntaechung-repo                        # Artifact Registry 저장소
+  IMAGE: todo-backend                                 # 이미지 이름
+  CONFIG_REPO: cstpeace0191/speckit-fastapi-claude-config
+  CONFIG_BRANCH: main                                 # Config 저장소의 기본 브랜치 (PR base)
+
+jobs:
+  build:
+    # 기존 태그를 승격하는 수동 실행이면 빌드를 건너뛴다
+    if: github.event_name == 'push' || inputs.image_tag == ''
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image name and tag
+        id: meta
+        run: |
+          # 불변(immutable) 태그: 커밋 SHA. 'prod' 같은 가변 태그는 Argo CD가 변경을 감지할 수 없다.
+          echo "image=${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # 서비스 계정 키(JSON) 인증 — deploy.yml과 같은 시크릿을 사용
+      # (권장: 키 없는 OIDC 방식으로 전환하려면 credentials_json 대신
+      #  workload_identity_provider · service_account 입력을 쓰고 permissions에 id-token: write 추가)
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GAR_LOCATION}-docker.pkg.dev" --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        # final stage는 test stage(pytest)에 의존하므로 테스트가 실패하면 이미지도 만들어지지 않는다
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: final
+          push: true
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  promote:
+    needs: build
+    # build가 성공했거나, 기존 태그 승격이라 build를 건너뛴 경우에 실행
+    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ inputs.target_env || 'dev' }}
+      IMAGE_TAG: ${{ inputs.image_tag || needs.build.outputs.tag }}
+    steps:
+      - name: Check inputs
+        run: |
+          if ! [[ "$IMAGE_TAG" =~ ^[0-9a-f]{7,40}$|^prod$ ]]; then
+            echo "::error::image_tag는 커밋 SHA 형식이어야 합니다: '$IMAGE_TAG'"
+            exit 1
+          fi
+
+      - name: Checkout Config repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CONFIG_REPO }}
+          ref: ${{ env.CONFIG_BRANCH }}
+          token: ${{ secrets.CONFIG_REPO_TOKEN }}
+          path: config
+
+      - name: Update newTag in overlay kustomization
+        working-directory: config
+        run: |
+          KUSTOMIZATION="overlays/${TARGET_ENV}/kustomization.yaml"
+          IMAGE_NAME="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}"
+          if [ ! -f "$KUSTOMIZATION" ]; then
+            echo "::error::$KUSTOMIZATION 이 Config 저장소에 없습니다."
+            exit 1
+          fi
+
+          # yq는 GitHub ubuntu 러너에 기본 설치되어 있다.
+          # images[] 중 이 앱 이미지 항목의 newTag만 바꾼다 (주석 · 나머지 내용 유지).
+          IMAGE_NAME="$IMAGE_NAME" yq -i \
+            '(.images[] | select(.name == strenv(IMAGE_NAME))).newTag = strenv(IMAGE_TAG)' \
+            "$KUSTOMIZATION"
+
+          echo "---- $KUSTOMIZATION"
+          cat "$KUSTOMIZATION"
+
+      - name: Open pull request on Config repository
+        working-directory: config
+        env:
+          GH_TOKEN: ${{ secrets.CONFIG_REPO_TOKEN }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "${TARGET_ENV}의 newTag가 이미 ${IMAGE_TAG} 입니다. 승격할 변경이 없습니다."
+            exit 0
+          fi
+
+          SHORT_SHA="${IMAGE_TAG:0:7}"
+          BRANCH="promote/${TARGET_ENV}-${SHORT_SHA}"
+          SOURCE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${IMAGE_TAG}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add "overlays/${TARGET_ENV}/kustomization.yaml"
+          git commit -m "promote(${TARGET_ENV}): ${IMAGE}:${SHORT_SHA}" \
+                     -m "Source: ${SOURCE_URL}"
+          git push origin "$BRANCH"
+
+          # 커밋 메시지 첫 줄만 PR 본문에 사용 (수동 실행 시에는 비어 있음)
+          FIRST_LINE="$(printf '%s' "${COMMIT_MSG:-manual run by ${GITHUB_ACTOR}}" | head -n 1)"
+
+          gh pr create \
+            --repo "$CONFIG_REPO" \
+            --base "$CONFIG_BRANCH" \
+            --head "$BRANCH" \
+            --title "promote(${TARGET_ENV}): ${IMAGE}:${SHORT_SHA}" \
+            --body "$(cat <<EOF
+          ## 이미지 승격
+
+          | 항목 | 값 |
+          |---|---|
+          | 환경 | \`${TARGET_ENV}\` |
+          | 변경 파일 | \`overlays/${TARGET_ENV}/kustomization.yaml\` |
+          | 새 태그 | \`${IMAGE_TAG}\` |
+          | 소스 커밋 | ${SOURCE_URL} |
+          | 커밋 메시지 | ${FIRST_LINE} |
+          | 워크플로 실행 | ${RUN_URL} |
+
+          이 PR을 머지하면 Argo CD가 변경을 감지해 \`todo-${TARGET_ENV}\` 네임스페이스에 동기화합니다.
+          롤백은 이 PR의 머지 커밋을 revert 하면 됩니다.
+          EOF
+          )"

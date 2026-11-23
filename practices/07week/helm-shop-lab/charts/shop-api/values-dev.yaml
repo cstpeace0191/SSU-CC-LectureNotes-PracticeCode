@@ -1,0 +1,19 @@
+# 개발 환경 (kind 로컬 클러스터)
+replicaCount: 1
+
+image:
+  # kind load 로 올린 로컬 이미지는 레지스트리에 없으므로 Always 를 쓰면 Pull 에 실패한다
+  pullPolicy: IfNotPresent
+  tag: "dev"          # make deploy-dev 는 --set image.tag=dev-<git sha> 로 덮어쓴다
+
+config:
+  greeting: "Hello from DEV"
+  logLevel: debug
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 192Mi

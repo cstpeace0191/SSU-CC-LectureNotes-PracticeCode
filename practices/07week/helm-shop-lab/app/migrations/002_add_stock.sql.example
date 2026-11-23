@@ -1,0 +1,3 @@
+-- [Lab 2-1] 이 파일 이름을 002_add_stock.sql 로 바꾸고 이미지를 새로 빌드한 뒤 helm upgrade 하면
+-- pre-upgrade 훅이 새 Pod 보다 먼저 아래 마이그레이션을 적용한다.
+ALTER TABLE items ADD COLUMN IF NOT EXISTS stock INTEGER NOT NULL DEFAULT 0;

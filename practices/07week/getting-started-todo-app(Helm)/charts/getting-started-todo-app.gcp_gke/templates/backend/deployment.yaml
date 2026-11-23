@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 2f8fafa6a24db389e66da1c69e70592413ac62d8
+    katenary.v3/version: master
+  labels:
+    {{- include "getting-started-todo-app.labels" . | nindent 4 }}
+    katenary.v3/component: backend
+  name: '{{ include "getting-started-todo-app.fullname" . }}-backend'
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "getting-started-todo-app.selectorLabels" . | nindent 6 }}
+      katenary.v3/component: backend
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        {{- include "getting-started-todo-app.selectorLabels" . | nindent 8 }}
+        katenary.v3/component: backend
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: '{{ include "getting-started-todo-app.fullname" . }}-backend'
+        image: '{{ tpl .Values.backend.repository.image $ }}:{{ tpl .Values.backend.repository.tag $ | default "latest" }}'
+        imagePullPolicy: {{ .Values.backend.imagePullPolicy }}
+        name: backend
+        ports:
+        - containerPort: 3000
+          name: port-3000
+        {{- if .Values.backend.resources }}
+        resources:
+          {{ .Values.backend.resources | toYaml | nindent 10 }}
+        {{- end }}
+      {{- if .Values.pullSecrets }}
+      imagePullSecrets:
+      {{- .Values.pullSecrets | toYaml | nindent 6 }}
+      {{- end }}
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - |-
+          until nc -z {{ include "getting-started-todo-app.fullname" . }}-mysql 3306; do
+            sleep 1;
+          done
+        image: busybox:latest
+        name: wait-for-mysql
+        {{- if .Values.backend.resources }}
+        resources:
+          {{ .Values.backend.resources | toYaml | nindent 10 }}
+        {{- end }}
+      {{- if .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- .Values.backend.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if ne .Values.backend.serviceAccount "" }}
+      serviceAccountName: {{ .Values.backend.serviceAccount | quote }}
+      {{- end }}

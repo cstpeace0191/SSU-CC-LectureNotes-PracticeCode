@@ -1,0 +1,2 @@
+protection.json → GitHub REST OpenAPI 스키마 검증 통과
+  필수 키: ['required_status_checks', 'enforce_admins', 'required_pull_request_reviews', 'restrictions']

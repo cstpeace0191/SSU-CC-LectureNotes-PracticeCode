@@ -1,0 +1,10 @@
+#GCP-storageclass.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata: { name: fast }
+provisioner: pd.csi.storage.gke.io  # GCP Persistent Disk CSI 드라이버
+parameters: { type: pd-balanced }   # GCP 균형 있는 SSD(AWS의 gp3에 대응, 또는 pd-ssd)
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+  # Pod 스케줄 후 생성 → Zone(영역) 일치
+allowVolumeExpansion: true

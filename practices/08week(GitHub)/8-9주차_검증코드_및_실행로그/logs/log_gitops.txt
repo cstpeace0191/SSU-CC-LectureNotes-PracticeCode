@@ -1,0 +1,164 @@
+##### [1] App 저장소: 새 커밋 (main 병합 = 이미지 빌드 대상)
+19 passed in 0.28s
+새 이미지 태그 = 8ef8077ca54af6f7f4f06058159ea24087eabd80
+##### [2] promote.yml 의 run 단계 그대로 실행 (TARGET_ENV=dev)
+✓ Validate inputs
+
+$ yq -i '(.images[] | select(.name == strenv(IMAGE)) | .newTag) = strenv(IMAGE_TAG)' overlays/${TARGET_ENV}/kustomization.yaml
+
+$ git diff
+diff --git a/overlays/dev/kustomization.yaml b/overlays/dev/kustomization.yaml
+index fa3c043..c82ba23 100644
+--- a/overlays/dev/kustomization.yaml
++++ b/overlays/dev/kustomization.yaml
+@@ -9,4 +9,4 @@ labels:
+     includeSelectors: false
+ images:
+   - name: ghcr.io/cstpeace0191/getting-started-todo-app-fastapi
+-    newTag: 163e71e8b386a7517387f546d8eb6525dca37c57   # 승격 PR 이 커밋 SHA 로 교체
++    newTag: 8ef8077ca54af6f7f4f06058159ea24087eabd80 # 승격 PR 이 커밋 SHA 로 교체
+
+$ git switch -c promote/dev-8ef8077
+Switched to a new branch 'promote/dev-8ef8077'
+
+$ git commit -qam "deploy(dev): ${IMAGE##*/}@${IMAGE_TAG:0:7}" && git log --oneline -1
+e51fc0d deploy(dev): getting-started-todo-app-fastapi@8ef8077
+
+$ git push -q -u origin promote/dev-8ef8077
+(GitHub 에서는 여기서 gh pr create → Validate manifests 통과 → 병합)
+--- Config 저장소 CI(validate.yml) 단계 실행 ---
+Summary: 2 resources found in 1 file - Valid: 2, Invalid: 0, Errors: 0, Skipped: 0
+No lint errors found!
+--- PR 병합 (squash) ---
+Squash commit -- not updating HEAD
+
+$ git log --oneline -3
+10893d6 deploy(dev): 8ef8077 (#2)
+4c9c0e4 feat: initial GitOps config (base, overlays, argocd)
+##### [3] Argo CD: Git 변경 감지 → 자동 Sync (todo-dev)
+
+$ argocd app get todo-dev | sed -n '1,14p'
+Name:               argocd/todo-dev
+Project:            todo
+Server:             https://kubernetes.default.svc
+Namespace:          todo-dev
+URL:                http://localhost:8080/applications/todo-dev
+Source:
+- Repo:             git://127.0.0.1/todo-app-config.git
+  Target:           main
+  Path:             overlays/dev
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to main (10893d6)
+Health Status:      Progressing
+
+
+$ kubectl -n todo-dev get deploy todo-app -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:8ef8077ca54af6f7f4f06058159ea24087eabd80
+
+$ kubectl -n todo-stg get deploy todo-app -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:163e71e8b386a7517387f546d8eb6525dca37c57
+##### [4] 드리프트: 누군가 kubectl 로 직접 변경 → selfHeal 이 Git 상태로 복구
+
+$ kubectl -n todo-dev scale deploy todo-app --replicas=3
+deployment.apps/todo-app scaled
+
+$ kubectl -n todo-dev get deploy todo-app -o jsonpath='{.spec.replicas}{"\n"}'
+3
+
+$ kubectl -n todo-dev get deploy todo-app -o jsonpath='replicas={.spec.replicas}{"\n"}'
+replicas=1
+
+$ argocd app history todo-dev
+SOURCE  git://127.0.0.1/todo-app-config.git
+ID      DATE                           REVISION
+0       2026-11-18 15:08:44 +0900 KST  main (10893d6)
+##### [5] prod 는 수동: 승격 PR 병합 후에도 OutOfSync → 사람이 Sync
+
+$ argocd app list -o wide | cut -c1-150
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS     HEALTH       SYNCPOLICY  CONDITIONS  REPO                            
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     Synced     Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     OutOfSync  Progressing  Manual      <none>      git://127.0.0.1/todo-app-config.
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced     Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.
+
+$ argocd app diff todo-prod | grep -E '^[<>].*image:'
+<         image: ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:539f79d78f6b574fae569dd4ad8c33a42f44a900
+>         image: ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:8ef8077ca54af6f7f4f06058159ea24087eabd80
+
+$ argocd app sync todo-prod | tail -4
+
+GROUP  KIND        NAMESPACE  NAME      STATUS     HEALTH       HOOK  MESSAGE
+       Service     todo-prod  todo-app  Synced     Progressing        service/todo-app unchanged
+apps   Deployment  todo-prod  todo-app  OutOfSync  Progressing        deployment.apps/todo-app configured
+##### [6] 롤백: Config 저장소에서 git revert → Argo CD 가 이전 태그로
+
+$ git revert --no-edit HEAD && git push -q origin main && git log --oneline -2
+[main 35539a1] Revert "deploy(prod): 8ef8077 (#3)"
+ Date: Wed Nov 18 15:09:01 2026 +0900
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+35539a1 Revert "deploy(prod): 8ef8077 (#3)"
+cf80cc3 deploy(prod): 8ef8077 (#3)
+
+$ argocd app sync todo-prod | tail -3
+GROUP  KIND        NAMESPACE  NAME      STATUS  HEALTH       HOOK  MESSAGE
+       Service     todo-prod  todo-app  Synced  Progressing        service/todo-app unchanged
+apps   Deployment  todo-prod  todo-app  Synced  Progressing        deployment.apps/todo-app configured
+
+$ kubectl -n todo-prod get deploy todo-app -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+ghcr.io/cstpeace0191/getting-started-todo-app-fastapi:539f79d78f6b574fae569dd4ad8c33a42f44a900
+
+$ argocd app history todo-prod
+SOURCE  git://127.0.0.1/todo-app-config.git
+ID      DATE                           REVISION
+0       2026-11-18 15:09:01 +0900 KST  main (cf80cc3)
+1       2026-11-18 15:09:04 +0900 KST  main (35539a1)
+##### [7] 최종 상태
+
+$ argocd app list
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH       SYNCPOLICY  CONDITIONS  REPO                                 PATH           TARGET
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     Synced  Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/dev   main
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     Synced  Progressing  Manual      <none>      git://127.0.0.1/todo-app-config.git  overlays/prod  main
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced  Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/stg   main
+GITOPS SCENARIO OK
+##### [8] 동기화 실패 → Argo CD Notifications → GitHub repository_dispatch (로컬 수신기)
+
+$ git log --oneline -1
+908746d chore(dev): change container port
+
+$ argocd app get todo-dev | grep -E 'Sync Status|Phase|Message' | cut -c1-200
+Sync Status:        OutOfSync from main (908746d)
+
+$ kubectl -n argocd get application todo-dev -o jsonpath='{.status.operationState.phase}{"\n"}'
+Failed
+
+$ argocd admin notifications trigger run on-sync-failed todo-dev -n argocd
+CONDITION                                                                                    RESULT
+app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']  true
+
+$ cat /tmp/caught.json
+{
+  "path": "/repos/cstpeace0191/todo-app-config/dispatches",
+  "auth": "Bearer TEST-TOKEN",
+  "body": {
+    "event_type": "argocd-sync-failed",
+    "client_payload": {
+      "app": "todo-dev",
+      "revision": "908746df19a5b50924c120b9d2c0281f786023b0",
+      "phase": "Failed",
+      "message": "one or more synchronization tasks completed unsuccessfully, reason: error when patching \"/dev/shm/57652011\": Deployment.apps \"todo-app\" is invalid: spec.template.spec.containers[0].ports[0].containerPort: Invalid value: 70000: must be between 1 and 65535, inclusive (retried 2 times)."
+    }
+  }
+}##### [9] 사람(또는 에이전트 롤백 PR)이 revert → 복구
+
+$ git -c user.name=student -c user.email=student@example.com revert --no-edit HEAD >/dev/null && git push -q origin main && git log --oneline -3
+2567708 Revert "chore(dev): change container port"
+908746d chore(dev): change container port
+35539a1 Revert "deploy(prod): 8ef8077 (#3)"
+
+$ argocd app list
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH       SYNCPOLICY  CONDITIONS  REPO                                 PATH           TARGET
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     Synced  Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/dev   main
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     Synced  Progressing  Manual      <none>      git://127.0.0.1/todo-app-config.git  overlays/prod  main
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced  Progressing  Auto-Prune  <none>      git://127.0.0.1/todo-app-config.git  overlays/stg   main
+SCENARIO2 OK
+EXIT=0

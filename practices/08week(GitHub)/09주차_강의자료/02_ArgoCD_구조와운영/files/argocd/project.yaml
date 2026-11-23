@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: todo
+  namespace: argocd
+spec:
+  description: getting-started-todo-app-fastapi (dev · stg · prod)
+  sourceRepos:
+    - https://github.com/cstpeace0191/todo-app-config.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: todo-*
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: ""
+      kind: Service
+  syncWindows:
+    - kind: allow
+      schedule: "0 1 * * 1-5"      # 평일 10:00 KST(UTC 01:00)부터
+      duration: 8h
+      applications: ["todo-prod"]
+      manualSync: true

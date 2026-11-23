@@ -1,0 +1,16 @@
+global:
+  env: prod
+
+orderService:
+  replicaCount: 3
+  image:
+    repository: myregistry.io/order-api
+    tag: "v1.2.0"
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+redis:
+  enabled: true
+  architecture: replication  # 고가용성(HA) 마스터-슬레이브 구성

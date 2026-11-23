@@ -1,0 +1,19 @@
+# This is the main values.yaml file for the getting-started-todo-app chart.
+# More information can be found in the chart's README.md file.
+#
+# generated at: 2026-11-13T11:38:43+09:00
+# compose files: compose.yaml
+# compose hash (sha1): a1a02d775f5ee2f41f5d1004dc69b3414329b336
+
+# Name of the chart (required), basically the name of the project.
+name: getting-started-todo-app
+icon: https://raw.githubusercontent.com/docker/getting-started-todo-app/master/client/public/favicon.ico
+apiVersion: v2
+
+# Version of the chart (required)
+version: 0.1.0
+
+# Version of the application (required).
+# This should be the main application version.
+appVersion: 1.0.0
+description: A Helm chart for getting-started-todo-app

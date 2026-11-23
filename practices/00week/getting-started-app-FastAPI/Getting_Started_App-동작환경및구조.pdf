@@ -1,0 +1,1212 @@
+%PDF-1.4
+%âãÏÓ
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 8 0 R 10 0 R 12 0 R 14 0 R ] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>
+endobj
+7 0 obj
+<< /Length 2305 >>
+stream
+q
+2 w
+0.01 0.40 0.84 RG
+0.98 0.99 1.00 rg
+30 30 535 781 re
+B
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 14 Tf
+1 0 0 1 50 740 Tm
+(Cloud Computing & Container Practice) Tj
+ET
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 24 Tf
+1 0 0 1 50 680 Tm
+(Docker Getting Started App \(FastAPI\)) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 14 Tf
+1 0 0 1 50 650 Tm
+(System Architecture and Runtime Workflow Guide) Tj
+ET
+Q
+q
+2 w
+0.01 0.40 0.84 RG
+50 630 m
+545 630 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 13 Tf
+1 0 0 1 50 590 Tm
+(Key Characteristics of Migrated Architecture:) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 565 Tm
+(- Modern Async ASGI Backend: Python 3.9+ / FastAPI / Uvicorn) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 545 Tm
+(- Dual Database Support: aiosqlite \(Default\) / aiomysql \(via MYSQL_HOST\)) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 525 Tm
+(- Interactive OpenAPI Specification: Swagger UI at /docs & ReDoc at /redoc) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 505 Tm
+(- Seamless React SPA Integration: StaticFiles mount on / without build step) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 485 Tm
+(- Automated Async Testing Suite: pytest & pytest-asyncio with unittest.mock) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 11 Tf
+1 0 0 1 65 465 Tm
+(- Lightweight Containerization: Python 3.11-slim Dockerfile with volume mapping) Tj
+ET
+Q
+q
+1 w
+0.80 0.85 0.95 RG
+0.95 0.97 1.00 rg
+50 260 495 160 re
+B
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 12 Tf
+1 0 0 1 65 395 Tm
+(Target Application & Verification Endpoints:) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 11 Tf
+1 0 0 1 65 370 Tm
+(* Web Application URL:      http://localhost:3000) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 11 Tf
+1 0 0 1 65 350 Tm
+(* Interactive Swagger Docs: http://localhost:3000/docs) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 11 Tf
+1 0 0 1 65 330 Tm
+(* ReDoc API Documentation:  http://localhost:3000/redoc) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 11 Tf
+1 0 0 1 65 310 Tm
+(* SQLite Storage Location:  todo.db / /etc/todos/todo.db) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 11 Tf
+1 0 0 1 65 290 Tm
+(* Service Launch Command:   uvicorn src.main:app --port 3000 --reload) Tj
+ET
+Q
+q
+0.45 0.48 0.51 rg
+BT
+/F1 11 Tf
+1 0 0 1 50 80 Tm
+(Lecture: 2026 Cloud Computing Practice) Tj
+ET
+Q
+q
+0.45 0.48 0.51 rg
+BT
+/F1 11 Tf
+1 0 0 1 50 65 Tm
+(Target: FastAPI + Uvicorn Implementation) Tj
+ET
+Q
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 7 0 R /Resources << /Font << /F1 3 0 R /F1B 4 0 R /FC 5 0 R /FCB 6 0 R >> >> >>
+endobj
+9 0 obj
+<< /Length 4864 >>
+stream
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 16 Tf
+1 0 0 1 40 800 Tm
+(1. System Architecture & Request Lifecycle) Tj
+ET
+Q
+q
+1 w
+0.88 0.89 0.91 RG
+40 790 m
+555 790 l
+S
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 10.5 Tf
+1 0 0 1 40 770 Tm
+(The application operates as a single-port async web service serving both the) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 10.5 Tf
+1 0 0 1 40 755 Tm
+(React client SPA assets and RESTful API endpoints concurrently.) Tj
+ET
+Q
+q
+1 w
+0.80 0.85 0.90 RG
+0.97 0.98 0.99 rg
+40 480 515 255 re
+B
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/FCB 11 Tf
+1 0 0 1 180 715 Tm
+(Browser Client \(http://localhost:3000\)) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 60 695 Tm
+(  | \(1\) GET /, /css/*, /js/*              | \(2\) REST API Calls \(JSON\)) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 60 680 Tm
+(  v                                        v \(/items, /items/{id}\)) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 665 Tm
+(+-----------------------------------------------------------------+) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 55 650 Tm
+(|              Uvicorn ASGI Web Server \(Port :3000\)               |) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 635 Tm
+(+-----------------------------------------------------------------+) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 620 Tm
+(                                 |                                 ) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 605 Tm
+(                                 v                                 ) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 590 Tm
+(|==> StaticFiles\(directory="src/static", html=True\)              |) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 575 Tm
+(|==> APIRouter\(prefix="/items"\) -> GET, POST, PUT, DELETE         |) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 560 Tm
+(|==> Lifespan DB Context Manager -> db.init\(\) / db.teardown\(\)     |) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 545 Tm
+(+-----------------------------------------------------------------+) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 530 Tm
+(                                 |                                 ) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 55 515 Tm
+(                 Persistence Layer \(src/persistence/\)              ) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 55 500 Tm
+(    [Default: aiosqlite \(todo.db\)] <---> [MYSQL_HOST: aiomysql]   ) Tj
+ET
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 16 Tf
+1 0 0 1 40 450 Tm
+(2. Directory Structure & File Manifest) Tj
+ET
+Q
+q
+1 w
+0.88 0.89 0.91 RG
+40 440 m
+555 440 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 415 Tm
+(Dockerfile) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 415 Tm
+(Production container build configuration based on python:3.11-slim) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 409 m
+555 409 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 393 Tm
+(requirements.txt) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 393 Tm
+(Application dependencies \(fastapi, uvicorn, pydantic, aiosqlite, pytest\)) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 387 m
+555 387 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 371 Tm
+(pytest.ini) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 371 Tm
+(Pytest test discovery configuration \(test_*.py and *.spec.py\)) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 365 m
+555 365 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 349 Tm
+(src/main.py) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 349 Tm
+(FastAPI application factory, lifespan DB hook, StaticFiles mount) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 343 m
+555 343 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 327 Tm
+(src/models.py) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 327 Tm
+(Pydantic data schemas: Item, ItemCreate, ItemUpdate) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 321 m
+555 321 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 305 Tm
+(src/persistence/) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 305 Tm
+(__init__.py \(DB switch\), sqlite.py \(aiosqlite\), mysql.py \(aiomysql\)) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 299 m
+555 299 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 283 Tm
+(src/routes/items.py) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 283 Tm
+(APIRouter handling GET /items, POST, PUT, and DELETE routes) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 277 m
+555 277 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 261 Tm
+(src/static/) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 261 Tm
+(Frontend assets: index.html, styles.css, app.js \(React/Babel/Bootstrap\)) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 255 m
+555 255 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/FCB 10 Tf
+1 0 0 1 45 239 Tm
+(spec/) Tj
+ET
+Q
+q
+0.35 0.38 0.41 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 185 239 Tm
+(Unit test suite with async mock fixtures for all routes and DB layers) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 233 m
+555 233 l
+S
+Q
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 9 0 R /Resources << /Font << /F1 3 0 R /F1B 4 0 R /FC 5 0 R /FCB 6 0 R >> >> >>
+endobj
+11 0 obj
+<< /Length 3962 >>
+stream
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 16 Tf
+1 0 0 1 40 800 Tm
+(3. REST API Endpoint Specifications) Tj
+ET
+Q
+q
+1 w
+0.88 0.89 0.91 RG
+40 790 m
+555 790 l
+S
+Q
+q
+1 w
+0.85 0.88 0.92 RG
+0.95 0.96 0.98 rg
+40 760 515 20 re
+B
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1B 10 Tf
+1 0 0 1 45 765 Tm
+(Method) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1B 10 Tf
+1 0 0 1 105 765 Tm
+(Endpoint) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1B 10 Tf
+1 0 0 1 205 765 Tm
+(Request Body) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1B 10 Tf
+1 0 0 1 360 765 Tm
+(Response Data) Tj
+ET
+Q
+q
+0.01 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 741 Tm
+(GET) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 741 Tm
+(/items) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 741 Tm
+(None) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 741 Tm
+(List of todo items: Item[]) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 735 m
+555 735 l
+S
+Q
+q
+0.10 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 719 Tm
+(POST) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 719 Tm
+(/items) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 719 Tm
+(ItemCreate: {"name": str}) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 719 Tm
+(Created item with new UUID: Item) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 713 m
+555 713 l
+S
+Q
+q
+0.80 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 697 Tm
+(PUT) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 697 Tm
+(/items/{id}) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 697 Tm
+(ItemUpdate: {"name", "completed"}) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 697 Tm
+(Updated item: Item) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 691 m
+555 691 l
+S
+Q
+q
+0.80 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 675 Tm
+(DELETE) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 675 Tm
+(/items/{id}) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 675 Tm
+(None) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 675 Tm
+(Status message: {"status": "ok"}) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 669 m
+555 669 l
+S
+Q
+q
+0.01 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 653 Tm
+(GET) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 653 Tm
+(/docs) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 653 Tm
+(None) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 653 Tm
+(Interactive OpenAPI Swagger UI) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 647 m
+555 647 l
+S
+Q
+q
+0.01 0.40 0.20 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 45 631 Tm
+(GET) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 9.5 Tf
+1 0 0 1 105 631 Tm
+(/redoc) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 205 631 Tm
+(None) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9 Tf
+1 0 0 1 360 631 Tm
+(ReDoc OpenAPI Documentation) Tj
+ET
+Q
+q
+0.5 w
+0.92 0.93 0.94 RG
+40 625 m
+555 625 l
+S
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 16 Tf
+1 0 0 1 40 594 Tm
+(4. Database & Persistence Architecture) Tj
+ET
+Q
+q
+1 w
+0.88 0.89 0.91 RG
+40 584 m
+555 584 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 12 Tf
+1 0 0 1 40 559 Tm
+(Table Schema: todo_items) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 10 Tf
+1 0 0 1 55 539 Tm
+(* id:        VARCHAR\(36\)  - UUID v4 unique string identifier) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 10 Tf
+1 0 0 1 55 524 Tm
+(* name:      VARCHAR\(255\) - Todo task text description) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FC 10 Tf
+1 0 0 1 55 509 Tm
+(* completed: BOOLEAN      - Stored as integer 0/1, mapped to bool) Tj
+ET
+Q
+q
+1 w
+0.85 0.88 0.92 RG
+0.97 0.98 0.99 rg
+40 399 515 95 re
+B
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 11 Tf
+1 0 0 1 55 479 Tm
+(Database Driver Switching Matrix:) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 10 Tf
+1 0 0 1 55 459 Tm
+(1. SQLite \(aiosqlite\): Active when MYSQL_HOST environment variable is NOT set.) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 55 444 Tm
+(   Database file created at todo.db \(Windows\) or /etc/todos/todo.db \(Linux/Docker\).) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 10 Tf
+1 0 0 1 55 424 Tm
+(2. MySQL \(aiomysql\): Active when MYSQL_HOST environment variable is provided.) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 55 409 Tm
+(   Connection pool managed with auto-reconnect and Docker secret support \(*_FILE\).) Tj
+ET
+Q
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 11 0 R /Resources << /Font << /F1 3 0 R /F1B 4 0 R /FC 5 0 R /FCB 6 0 R >> >> >>
+endobj
+13 0 obj
+<< /Length 2791 >>
+stream
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 16 Tf
+1 0 0 1 40 800 Tm
+(5. Execution, Docker Packaging & Testing Guide) Tj
+ET
+Q
+q
+1 w
+0.88 0.89 0.91 RG
+40 790 m
+555 790 l
+S
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 13 Tf
+1 0 0 1 40 765 Tm
+(5.1 Local Host Execution \(Windows PowerShell / Linux\)) Tj
+ET
+Q
+q
+1 w
+0.85 0.88 0.92 RG
+0.97 0.98 0.99 rg
+40 685 515 65 re
+B
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 735 Tm
+(# 1. Install dependencies from requirements.txt) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 720 Tm
+(pip install -r requirements.txt) Tj
+ET
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 705 Tm
+(# 2. Launch FastAPI ASGI server with hot-reloading) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 690 Tm
+(uvicorn src.main:app --host 0.0.0.0 --port 3000 --reload) Tj
+ET
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 13 Tf
+1 0 0 1 40 655 Tm
+(5.2 Docker Container Build & Run Commands) Tj
+ET
+Q
+q
+1 w
+0.85 0.88 0.92 RG
+0.97 0.98 0.99 rg
+40 535 515 105 re
+B
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 625 Tm
+(# 1. Build Docker image) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 610 Tm
+(docker build -t getting-started-fastapi .) Tj
+ET
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 595 Tm
+(# 2. Run container with persistent volume mounting for SQLite) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 580 Tm
+(docker run -dp 3000:3000 --name todo-app -v todo-db:/etc/todos getting-started-fastapi) Tj
+ET
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 565 Tm
+(# 3. Check container logs and status) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 550 Tm
+(docker logs -f todo-app) Tj
+ET
+Q
+q
+0.09 0.13 0.24 rg
+BT
+/F1B 13 Tf
+1 0 0 1 40 505 Tm
+(5.3 Automated Async Unit Test Execution) Tj
+ET
+Q
+q
+1 w
+0.85 0.88 0.92 RG
+0.97 0.98 0.99 rg
+40 425 515 65 re
+B
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 475 Tm
+(# Run full test suite covering routes and persistence layers) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/FCB 10 Tf
+1 0 0 1 50 460 Tm
+(pytest) Tj
+ET
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/FC 9.5 Tf
+1 0 0 1 50 440 Tm
+(# Pytest automatically discovers test_*.py and *.spec.py in spec/ folder) Tj
+ET
+Q
+q
+1 w
+0.01 0.40 0.84 RG
+0.95 0.97 1.00 rg
+40 310 515 95 re
+B
+Q
+q
+0.01 0.40 0.84 rg
+BT
+/F1B 11 Tf
+1 0 0 1 55 385 Tm
+(Verification Summary:) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 55 365 Tm
+(1. Frontend UI: Access http://localhost:3000 to manage todo items with real-time UI.) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 55 348 Tm
+(2. API Testing: Visit http://localhost:3000/docs for Swagger UI interactive testing.) Tj
+ET
+Q
+q
+0.14 0.16 0.18 rg
+BT
+/F1 9.5 Tf
+1 0 0 1 55 331 Tm
+(3. Data Persistence: Verified with volume todo-db:/etc/todos across container restarts.) Tj
+ET
+Q
+q
+0.50 0.50 0.50 rg
+BT
+/F1 10 Tf
+1 0 0 1 150 100 Tm
+(End of Document - 2026 Cloud Computing Architecture Guide) Tj
+ET
+Q
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 13 0 R /Resources << /Font << /F1 3 0 R /F1B 4 0 R /FC 5 0 R /FCB 6 0 R >> >> >>
+endobj
+xref
+0 15
+0000000000 65535 f 
+0000000019 00000 n 
+0000000068 00000 n 
+0000000148 00000 n 
+0000000218 00000 n 
+0000000293 00000 n 
+0000000361 00000 n 
+0000000434 00000 n 
+0000002791 00000 n 
+0000002955 00000 n 
+0000007871 00000 n 
+0000008036 00000 n 
+0000012051 00000 n 
+0000012217 00000 n 
+0000015061 00000 n 
+trailer
+<< /Size 15 /Root 1 0 R >>
+startxref
+15227
+%%EOF

@@ -1,0 +1,253 @@
+################################################################################
+# GKE-deployment-GCP.yaml : todo 앱(백엔드 + MySQL) GKE 배포
+#
+# 함께 쓰는 파일 (모두 selector app: todo-backend · Service port 80 → targetPort 3000)
+#   GKE-service-cip.yaml  todo-backend-cip  (ClusterIP, 내부 전용)
+#   GKE-service-np.yaml   todo-backend-np   (NodePort 30080, GKE Ingress 백엔드)
+#   GKE-service-lb.yaml   todo-backend-lb   (LoadBalancer, 외부 L4)
+#   GKE-ingress.yaml     todo-backend-ingress (외부 L7 + 관리형 인증서 + BackendConfig)
+#
+# 적용 순서
+#   $ kubectl apply -f GKE-deployment-GCP.yaml
+#   $ kubectl rollout status deployment/todo-backend
+#   $ kubectl apply -f GKE-service-np.yaml -f GKE-ingress.yaml   # (또는 cip / lb)
+#
+# [GKE 프로덕션 환경에서 Traefik(리버스 프록시)이 필요 없는 이유]
+# 1. 프론트엔드/백엔드 단일 컨테이너 번들링:
+#    - Docker Compose 개발 환경에서는 client(React Dev 서버)와 backend가 분리되어
+#      단일 진입점(포트 80)에서 경로(/api vs /)별로 요청을 라우팅할 Traefik이 필요했습니다.
+#    - 반면 GKE 프로덕션에서는 Dockerfile(target: final)을 통해 프론트엔드 정적 파일이
+#      Express 백엔드(todo-backend:prod, 포트 3000) 내부에 통합 번들링되어
+#      직접 서빙되므로 컨테이너 간 경로 분기 프록시가 필요 없습니다.
+# 2. 쿠버네티스 네이티브 DNS & Service(L4) 지원:
+#    - 백엔드 Pod에서 DB로 접근할 때 별도 프록시 없이, 쿠버네티스 내장 Service(mysql)와
+#      CoreDNS에 의해 'mysql:3306' 이름으로 서비스 디스커버리가 처리됩니다.
+# 3. 클라우드 관리형 로드 밸런서(GCP Cloud Load Balancing) 활용:
+#    - 외부 접속은 'GKE-service-lb.yaml'(L4), 'GKE-ingress.yaml'(L7 Ingress) 또는
+#      Gateway API(todo-gateway.yaml)로 GCP 부하 분산기가 공인 IP를 프로비저닝하므로
+#      클러스터 내부에 별도의 Traefik 소프트웨어 프록시가 불필요합니다.
+# 4. 아키텍처 및 보안 (Docker Socket 비사용):
+#    - Compose의 Traefik은 호스트의 Docker 소켓(/var/run/docker.sock)을 마운트하여 라벨을 감시하지만,
+#      GKE(containerd 런타임)에서는 호스트 소켓 마운트가 심각한 보안 취약점이 되므로
+#      쿠버네티스 표준 API(Service, Ingress, Gateway)로 트래픽을 제어합니다.
+################################################################################
+
+# ① DB 비밀번호 (실습용 값 — 운영에서는 Git에 두지 말고 kubectl create secret / Secret Manager 사용)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todo-db-secret
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/part-of: todo-app
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "secret"
+  MYSQL_PASSWORD: "secret"      # 백엔드 접속 비밀번호 (MYSQL_USER=root 이므로 루트 비밀번호와 동일해야 함)
+
+---
+# ② 백엔드 · DB 공통 설정
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/part-of: todo-app
+data:
+  MYSQL_HOST: "mysql"           # 아래 mysql Service 이름 (CoreDNS)
+  MYSQL_USER: "root"
+  MYSQL_DB: "todos"
+  PORT: "3000"                  # 백엔드 컨테이너 포트 = Service targetPort
+
+---
+# ③ MySQL 데이터 디스크 (GCP Persistent Disk)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todo-mysql-pvc
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo   # GKE 기본 CSI 스토리지 클래스 (pd-balanced)
+  resources:
+    requests:
+      storage: 10Gi                # pd-balanced 최소 크기 (10Gi)
+
+---
+# ④ MySQL — 단독 Pod 대신 Deployment(replicas 1)
+#    Autopilot은 노드를 수시로 교체 → 단독 Pod는 다시 만들어지지 않지만 Deployment는 재생성됨
+#    RWO 디스크는 한 Pod만 붙일 수 있으므로 Recreate 전략 (운영: StatefulSet 또는 Cloud SQL 권장)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+        app.kubernetes.io/name: getting-started-todo-app
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:9.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-db-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-config
+                  key: MYSQL_DB
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+              subPath: mysql        # PD 루트의 lost+found 때문에 MySQL 초기화가 실패하는 문제 방지
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: todo-mysql-pvc
+
+---
+# ⑤ MySQL 내부 Service (클러스터 내부 전용 → mysql:3306)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - name: mysql
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+
+---
+# ⑥ todo-backend — 모든 todo-backend-* Service 의 selector(app: todo-backend) 대상
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+  labels:
+    app.kubernetes.io/name: getting-started-todo-app
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1                   # 강의 기준값 (kubectl scale 실습: 4 → 1)
+  # [GKE 무중단 롤링 업데이트 전략]
+  minReadySeconds: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1               # 먼저 1개 추가
+      maxUnavailable: 0         # 기존 Pod 유지
+  selector:
+    matchLabels:
+      app: todo-backend
+  template:
+    metadata:
+      labels:
+        app: todo-backend
+        app.kubernetes.io/name: getting-started-todo-app
+        app.kubernetes.io/component: backend
+    spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MySQL service at mysql:3306..."
+              until nc -z -w3 mysql 3306; do
+                echo "MySQL is not ready yet, sleeping 2s..."
+                sleep 2
+              done
+              echo "MySQL is available!"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+      containers:
+        - name: backend         # kubectl set image deploy/todo-backend backend=... 의 컨테이너 이름
+          # GKE Artifact Registry 전용 프로덕션 이미지 ($IMAGE = $REG/todo-backend:prod)
+          image: asia-northeast3-docker.pkg.dev/ssu-agent-vertex-509708/my-repo/todo-backend:prod
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: todo-config
+          env:                  # 백엔드에는 앱 접속 비밀번호만 전달 (루트 비밀번호 키는 노출하지 않음)
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-db-secret
+                  key: MYSQL_PASSWORD
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          # readinessProbe 경로 = GKE-ingress.yaml BackendConfig healthCheck.requestPath (/api/items)
+          readinessProbe:
+            httpGet:
+              path: /api/items
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/items
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3

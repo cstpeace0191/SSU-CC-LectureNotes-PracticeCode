@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\USER\AppData\Local\Microsoft\WinGet\Links\kompose.exe convert -f compose.yaml
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: proxy
+  name: proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: proxy
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\USER\AppData\Local\Microsoft\WinGet\Links\kompose.exe convert -f compose.yaml
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: proxy
+    spec:
+      containers:
+        - args:
+            - --providers.docker
+          image: traefik:v3.6
+          name: proxy
+          ports:
+            - containerPort: 80
+              protocol: TCP
+      restartPolicy: Always

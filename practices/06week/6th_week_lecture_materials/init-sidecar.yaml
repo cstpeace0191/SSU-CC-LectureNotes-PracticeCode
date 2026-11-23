@@ -1,0 +1,158 @@
+# init-sidecar.yaml
+# K8s v1.28+ 네이티브 사이드카 컨테이너 및 Init 컨테이너를 포함한 완전한 todo-backend Deployment
+apiVersion: apps/v1           # ① 워크로드 관리를 위한 핵심 API 그룹 및 버전
+kind: Deployment              # ② Pod 복제본 관리 및 무중단 배포를 관장하는 고수준 컨트롤러
+metadata:                     # ③ Deployment 메타데이터 정의
+  name: todo-backend          #    - Deployment 리소스의 고유 식별 이름
+  namespace: default          #    - 배포 대상 네임스페이스
+  labels:                     #    - 리소스 검색 및 관리를 위한 라벨
+    app: todo-backend
+    tier: backend
+  annotations:                #    - 관리 부서 및 배포 버전 관련 비식별 메타데이터
+    team: backend-dev
+    description: "Todo backend application with MySQL wait init container and fluent-bit log shipper sidecar"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "로그 수집 및 fluent-bit, 메인 앱 런타임 쓰기 권한 허용"
+    ignore-check.kube-linter.io/run-as-non-root: "초기화 컨테이너 및 fluent-bit 바인딩 권한 허용"
+spec:                         # ④ 원하는 상태(Desired State) 사양 정의
+  replicas: 3                 #    - 고가용성을 위해 상시 유지할 Pod 복제본 개수
+  revisionHistoryLimit: 10    #    - 롤백(Rollback)을 위해 보관할 이전 ReplicaSet 이력 수
+  strategy:
+    type: RollingUpdate       #    - 무중단 롤링 업데이트 방식 채택
+    rollingUpdate:
+      maxSurge: 25%           #    - 업데이트 중 목표 수량을 초과하여 생성 가능한 최대 Pod 비율
+      maxUnavailable: 25%     #    - 업데이트 중 일시적으로 정지 가능한 최대 Pod 비율
+  minReadySeconds: 5          #    - 새 Pod 생성 후 정상 기동으로 인정하기 전 대기하는 검증 시간(초)
+  selector:                   #    - 관리 대상 Pod을 식별하기 위한 셀렉터
+    matchLabels:
+      app: todo-backend       #    - template.metadata.labels와 반드시 일치해야 함
+  template:                   # ⑤ 신규 Pod 생성을 위한 Pod 설계도(PodTemplateSpec)
+    metadata:
+      labels:                 #    - 생성될 Pod에 부여할 식별 라벨
+        app: todo-backend
+        tier: backend
+    spec:                     # ⑥ Pod 실행 세부 사양 (PodSpec)
+      # [고가용성 분산 배치] 동일 노드 집중 방지를 위한 Pod 안티-어피니티(Anti-Affinity) 설정
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - todo-backend
+              topologyKey: kubernetes.io/hostname
+
+      # ------------------------------------------------------------------------
+      # [1] initContainers: 초기화 및 네이티브 사이드카 컨테이너 정의 영역
+      # ------------------------------------------------------------------------
+      initContainers:
+      # ① 일반 Init 컨테이너: DB가 3306 포트로 준비될 때까지 대기 후 성공 시 종료
+      - name: wait-mysql
+        image: busybox:1.36
+        command:
+        - "sh"
+        - "-c"
+        - "until nc -z -w 2 db 3306; do echo 'Waiting for MySQL database at db:3306...'; sleep 2; done; echo 'MySQL is ready!'"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+
+      # ② 네이티브 사이드카 컨테이너 (K8s v1.28+ Native Sidecar Feature)
+      #    - restartPolicy: Always 지정으로 인해 Init 단계에서 시작된 후 메인 컨테이너와 함께 영구 실행
+      #    - 공유 볼륨(shared-logs)에 메인 앱이 적재하는 로그를 실시간 수집/전송
+      - name: log-shipper
+        image: fluent/fluent-bit:3.2
+        restartPolicy: Always
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/app
+          readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+      # ------------------------------------------------------------------------
+      # [2] containers: 실제 비즈니스 로직을 처리하는 메인 애플리케이션 컨테이너
+      # ------------------------------------------------------------------------
+      containers:
+      # ③ 메인 앱 컨테이너 (todo-backend:prod)
+      - name: app
+        image: todo-backend:prod
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3000         # Todo Node.js 앱의 기본 포트 3000
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "3000"
+        # [핵심 해결 1] Todo 앱(Node.js)이 인식하는 MySQL 접속 환경변수 표준 (MYSQL_*)
+        - name: MYSQL_HOST
+          value: "db"                 # sf-db.yaml의 Headless Service(name: db)와 매핑
+        - name: MYSQL_USER
+          value: "root"
+        - name: MYSQL_PASSWORD
+          value: "password123!"       # sf-db.yaml의 MYSQL_ROOT_PASSWORD와 일치
+        - name: MYSQL_DB
+          value: "tododb"             # sf-db.yaml의 MYSQL_DATABASE와 일치
+        # 호환성을 위한 범용 환경변수 병행 지정
+        - name: DB_HOST
+          value: "db"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: "tododb"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password123!"
+        - name: LOG_PATH
+          value: "/var/log/app/app.log"
+        volumeMounts:
+        - name: shared-logs              # 로그 기록용 공유 볼륨 마운트
+          mountPath: /var/log/app
+        - name: etc-todos                # 혹시 모를 로컬 sqlite 저장소 폴백 시 권한 에러 방지
+          mountPath: /etc/todos
+        - name: tmp-dir                  # 임시 파일 생성을 위한 볼륨 마운트
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+
+        # 애플리케이션 헬스체크 프로브 (포트 3000 TCP/HTTP 감시)
+        readinessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+
+      # ------------------------------------------------------------------------
+      # [3] volumes: 컨테이너 간 공유 및 런타임 스토리지 볼륨
+      # ------------------------------------------------------------------------
+      volumes:
+      - name: shared-logs                # 메인 컨테이너와 log-shipper 사이드카 간 실시간 로그 공유용 볼륨
+        emptyDir: {}
+      - name: etc-todos                  # sqlite 폴백 시 /etc/todos 디렉터리 쓰기 보장
+        emptyDir: {}
+      - name: tmp-dir                    # 임시 쓰기를 위한 볼륨
+        emptyDir: {}

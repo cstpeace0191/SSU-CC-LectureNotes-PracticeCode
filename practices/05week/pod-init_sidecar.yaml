@@ -1,0 +1,129 @@
+#pod.yaml — Init Container와 사이드카(Sidecar) 패턴을 함께 실습하는 Pod 예제
+#   초기화 컨테이너 (init-html)  : 메인 앱 시작 전 웹 콘텐츠(index.html) 동적 생성
+#   컨테이너 A (web-app)        : Web App, 포트 3000 (생성된 HTML 제공)
+#   컨테이너 B (log-collector)  : 사이드카 로그 수집기, 포트 8080
+#   A → http://localhost:8080 → B   (모든 요청의 사본을 사이드카로 전송 = 로그 수집)
+---
+apiVersion: v1                # ① A의 nginx 설정을 담는 ConfigMap
+kind: ConfigMap
+metadata:
+  name: web-pod-nginx
+  namespace: default
+data:
+  default.conf: |
+    server {
+      listen 3000;                                  # 컨테이너 A는 3000번 포트
+      location / {
+        mirror /_log;                               # 받은 요청의 사본을 /_log 로 복제
+        mirror_request_body off;
+        root  /usr/share/nginx/html;
+        index index.html;
+      }
+      location = /_log {
+        internal;
+        proxy_pass http://127.0.0.1:8080$request_uri;   # = http://localhost:8080 (같은 Pod의 B)
+      }
+    }
+---
+apiVersion: v1                # ② 쿠버네티스 핵심(Core) API 버전
+kind: Pod                     # ③ 최소 배포 단위인 Pod 리소스 지정
+metadata:
+  name: web-pod
+  namespace: default
+  labels:
+    app: web                  #    'app=web' 라벨 (Service 연결 및 조회용)
+spec:
+  # [kube-linter: run-as-non-root] Pod의 모든 컨테이너를 비루트로 실행
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+
+  initContainers:
+  # ─────────── 초기화 컨테이너 : 메인 앱 시작 전 index.html 동적 생성 ───────────
+  - name: init-html
+    image: busybox:1.36
+    command:
+    - sh
+    - -c
+    - |
+      echo "<h1>Hello from Pod (Initialized by Init Container)!</h1><p>Pod initialized successfully!</p>" > /work-dir/index.html
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities: { drop: ["ALL"] }
+    volumeMounts:
+    - name: html-volume                              # 초기화된 HTML을 저장할 공유 볼륨
+      mountPath: /work-dir
+    resources:
+      requests: { cpu: 10m, memory: 16Mi }
+      limits:   { memory: 32Mi }
+
+  containers:
+  # ─────────────── 컨테이너 A : Web App (:3000) ───────────────
+  - name: web-app
+    image: nginxinc/nginx-unprivileged:1.27-alpine   # 비루트 실행용 nginx (pid·임시파일을 /tmp에 씀)
+    ports:
+    - name: http
+      containerPort: 3000
+    securityContext:
+      readOnlyRootFilesystem: true                   # [kube-linter: no-read-only-root-fs]
+      allowPrivilegeEscalation: false
+      capabilities: { drop: ["ALL"] }
+    volumeMounts:
+    - name: nginx-conf                               # 3000번 포트 설정 주입
+      mountPath: /etc/nginx/conf.d
+      readOnly: true
+    - name: a-tmp                                    # 읽기 전용 루트 FS에서 nginx가 쓸 공간
+      mountPath: /tmp
+    - name: html-volume                              # Init Container가 생성한 index.html 마운트
+      mountPath: /usr/share/nginx/html
+      readOnly: true
+    readinessProbe:
+      httpGet: { path: /, port: http }
+      periodSeconds: 5
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }
+      limits:   { memory: 128Mi }
+
+  # ─────────── 컨테이너 B : 사이드카 로그 수집기 (:8080) ───────────
+  - name: log-collector
+    image: python:3.12-alpine
+    # 받은 요청을 표준 출력(stderr)에 한 줄씩 기록 → kubectl logs 로 확인
+    command: ["python", "-u", "-m", "http.server", "8080", "--directory", "/tmp"]
+    ports:
+    - name: log
+      containerPort: 8080     # A와 다른 포트여야 함 (같으면 Address already in use)
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities: { drop: ["ALL"] }
+    volumeMounts:
+    - name: b-tmp             # 파일시스템은 컨테이너별로 분리 — A의 /tmp와 다른 볼륨
+      mountPath: /tmp
+    resources:
+      requests: { cpu: 50m, memory: 32Mi }
+      limits:   { memory: 64Mi }
+
+  volumes:
+  - name: nginx-conf
+    configMap: { name: web-pod-nginx }
+  - name: a-tmp
+    emptyDir: {}
+  - name: b-tmp
+    emptyDir: {}
+  - name: html-volume
+    emptyDir: {}
+  restartPolicy: Always       # ④ 컨테이너 종료 시 자동 재시작
+
+# ─────────────────────────── 실습 확인 ───────────────────────────
+# $ kubectl apply -f pod-init_sidecar.yaml
+# $ kubectl get pod web-pod -w               # Init:0/1 -> PodInitializing -> Running (READY 2/2) 상태 변화 확인
+# $ kubectl logs web-pod -c init-html        # 초기화 컨테이너 로그 확인
+# $kubectl exec web-pod -c web-app -- cat /usr/share/nginx/html/index.html
+# $ kubectl port-forward pod/web-pod 12345:3000
+# $ curl http://localhost:12345/             # (Init Container가 생성한 "Hello from Pod..." 확인)
+# $ kubectl logs web-pod -c log-collector     # B 로그에 "GET / ..." 기록 = A → localhost:8080 → B
+# $ kubectl exec web-pod -c web-app -- wget -qO- http://localhost:8080/   # A 안에서 B를 localhost로 직접 호출
+# 포트 충돌 실험: B의 "8080"을 "3000"으로 바꿔 재배포 → B가 Address already in use로 종료 → CrashLoopBackOff

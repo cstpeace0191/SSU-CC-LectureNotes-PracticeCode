@@ -1,0 +1,2 @@
+actionlint: 앱 저장소 워크플로 전체 통과
+actionlint: Config 저장소 워크플로 전체 통과

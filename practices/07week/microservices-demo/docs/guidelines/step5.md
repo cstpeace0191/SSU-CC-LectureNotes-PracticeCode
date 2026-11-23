@@ -1,0 +1,14 @@
+# [Step 5] 빌드, 실행 및 배포 파이프라인 보고서
+- **컴파일/번들링(Build Pipeline):**
+  - 빌드 도구: (예: Vite + esbuild / Go build / Maven)
+  - 빌드 커맨드: (예; `pnpm build` 또는 `make build` )
+  - 산출물(Artifact): (예: `/dist`, 단일 실행 바이너리, Docker 이미지)
+- **로컬 실행(Run & Emulation):**
+  - 사전 필수 서비스: (예: PostgreSQL 15, Redis 7)
+  - 로컬 구동 커맨드: `docker-compose up -d` 후 `npm run dev`
+  - 환경 변수 설정: `.env.example` 복사 후 필수 키(`DATABASE_URL` 등) 주입
+- **배포 및 인프라(Deploy Pipeline):**
+  - CI/CD 트리거: `main` 브랜치 PR 머지 시 자동 트리거 (.github/workflows/deploy.yml)
+  - 배포 대상(Target): Kubernetes Cluster (Helm Chart 사용) / AWS ECS Fargate
+  - 컨테이너 이미지 레지스트리: AWS ECR / GitHub Packages (GHCR)
+  - 무중단 배포 방식: Kubernetes RollingUpdate (maxSurge: 25%, maxUnavailable: 0)

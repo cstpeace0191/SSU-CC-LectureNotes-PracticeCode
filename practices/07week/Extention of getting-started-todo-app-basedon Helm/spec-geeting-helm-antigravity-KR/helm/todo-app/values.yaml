@@ -1,0 +1,50 @@
+replicaCount: 1
+
+image:
+  repository: todo-app
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+mysql:
+  enabled: false
+  host: ""
+  user: "root"
+  password: "secretpassword"
+  database: "todos"
+  port: 3306
+
+persistence:
+  sqlite:
+    enabled: true
+    storageLocation: "/etc/todos/todo.db"
+    size: 1Gi
+    accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+

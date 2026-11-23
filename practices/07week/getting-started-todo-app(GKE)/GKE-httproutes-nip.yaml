@@ -1,0 +1,45 @@
+# GKE-httproutes-nip.yaml
+# nip.io 와일드카드 DNS 를 활용한 GKE Gateway HTTPRoute 매니페스트
+# www.ssu-cloud-computing-gke.<IP>.nip.io 로 접속 시 실제 Todo 웹 애플리케이션 화면 표시
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web-app-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: infra-team
+    sectionName: http # Gateway 리스너 이름 매핑
+  hostnames:
+  - "www.ssu-cloud-computing-gke.34.160.156.124.nip.io"
+  - "app.ssu-cloud-computing-gke.34.160.156.124.nip.io"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: app-service         # 실제 Todo 웹 인터페이스(React + Express) 서비스 (10.104.0.15:3000)
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: infra-team
+    sectionName: http # Gateway 리스너 이름 매핑
+  hostnames:
+  - "api.ssu-cloud-computing-gke.34.160.156.124.nip.io"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: api-service         # API 테스트용 서비스 (whereami)
+      port: 80

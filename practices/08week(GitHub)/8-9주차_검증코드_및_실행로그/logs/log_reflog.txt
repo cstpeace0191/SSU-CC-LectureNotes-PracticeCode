@@ -1,0 +1,13 @@
+$ git reset --hard HEAD~1        # 실수: 방금 커밋을 지움
+HEAD is now at 891cfd4 docs: add CONTRIBUTING.md
+$ git log --oneline -1
+891cfd4 docs: add CONTRIBUTING.md
+$ git reflog -4
+891cfd4 HEAD@{0}: reset: moving to HEAD~1
+4265fa8 HEAD@{1}: pull --rebase origin main (finish): returning to refs/heads/main
+4265fa8 HEAD@{2}: pull --rebase origin main (pick): docs: add lab checklist to README
+891cfd4 HEAD@{3}: pull --rebase origin main (start): checkout 891cfd475f74fa9512cdcf7981063fa50cc8fd11
+$ git reset --hard HEAD@{1}       # reflog 로 되살리기
+HEAD is now at 4265fa8 docs: add lab checklist to README
+$ git log --oneline -1
+4265fa8 docs: add lab checklist to README

@@ -1,0 +1,55 @@
+#replicaset.yaml
+apiVersion: apps/v1           # ① 워크로드 리소스 관리 API 그룹/버전
+kind: ReplicaSet              # ② 지정된 수의 Pod 복제본을 항상 유지하고 자가 치유하는 컨트롤러
+metadata:                     # ③ ReplicaSet의 식별 정보
+  name: web-rs                #    - ReplicaSet 고유 이름
+  namespace: default          #    - 배포 대상 네임스페이스
+  annotations:
+    ignore-check.kube-linter.io/no-read-only-root-fs: "표준 nginx 이미지는 /var/cache 등 쓰기 권한이 필요함"
+    ignore-check.kube-linter.io/run-as-non-root: "표준 nginx 이미지는 80 포트 바인딩 및 초기 구동 시 root 권한이 필요함"
+spec:                         # ④ 원하는 상태(Desired State) 정의
+  replicas: 4                 #    - 항상 유지해야 할 Pod의 목표 수량 (4개)
+  selector:                   #    - 관리할 Pod을 식별하기 위한 라벨 셀렉터
+    matchLabels:              #      - 아래 라벨 조건을 만족하는 Pod을 감시/제어
+      app: web                #        - 'app=web' 라벨을 가진 Pod 대상
+  template:                   # ⑤ Pod 수가 부족할 때 새로 찍어낼 설계도 (PodTemplateSpec)
+    metadata:                 #    - 생성될 Pod의 메타데이터
+      labels:                 #      - 생성될 Pod에 부착될 라벨 (selector와 일치 필수)
+        app: web              #        - 'app=web' 라벨 부여
+    spec:                     # ⑥ 개별 Pod의 실행 사양 (PodSpec)
+      # [kube-linter 해결 1: no-anti-affinity] Pod 안티-어피니티 설정 (복제본 분산 배치)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - web
+              topologyKey: kubernetes.io/hostname
+
+      # [kube-linter 참고] 표준 nginx 이미지는 /var/cache, /var/run 쓰기 및 80 포트 바인딩이 필요하므로
+      # 실습 환경에서는 어노테이션으로 룰을 예외 처리하고 기본 root 실행을 허용합니다.
+
+      containers:             #    - 실행할 컨테이너 목록
+      - name: nginx           #      - 컨테이너 고유 식별 이름
+        image: nginx:1.27     #      - 실행할 컨테이너 이미지 및 버전 태그
+
+        ports:
+        - containerPort: 80
+
+        # [kube-linter 해결 4 & 5: unset-cpu-requirements, unset-memory-requirements]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+ 
+# [실습 테스트 가이드]
+# Pod 하나 삭제 시 즉시 새 Pod 생성 (자가 치유 확인):
+# $ kubectl delete pod <pod-name>
+# $ kubectl get rs,pod -l app=web

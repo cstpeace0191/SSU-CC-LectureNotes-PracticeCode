@@ -1,0 +1,101 @@
+# [사례 6] CI: 차트 검증 → 이미지 빌드/푸시 → 차트 OCI 푸시 → GitOps 매니페스트 갱신
+# 배포 자체는 하지 않는다. values-prod.yaml 의 image.tag 커밋이 [사례 7] Argo CD 동기화를 촉발한다.
+name: ci
+
+on:
+  pull_request:
+    paths: ["app/**", "charts/**", ".github/workflows/ci.yaml"]
+  push:
+    branches: [main]
+    paths: ["app/**", "charts/**", ".github/workflows/ci.yaml"]
+
+permissions:
+  contents: write      # update-manifest 잡이 values-prod.yaml 을 커밋
+  packages: write      # GHCR 에 이미지/차트 푸시
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/${{ github.repository_owner }}/shop-api
+  CHART_REPO: oci://ghcr.io/${{ github.repository_owner }}/charts
+
+jobs:
+  # 1) 차트 정적 검증 — PR 마다 실행
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: helm lint (dev / prod)
+        run: |
+          helm lint charts/shop-db
+          helm lint charts/shop-api -f charts/shop-api/values-dev.yaml
+          helm lint charts/shop-api -f charts/shop-api/values-prod.yaml
+      - name: render + kubeconform 스키마 검증
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          for env in dev prod; do
+            helm template shop-api charts/shop-api -f charts/shop-api/values-$env.yaml > rendered-$env.yaml
+            ./kubeconform -strict -summary rendered-$env.yaml
+          done
+
+  # 2) 이미지 빌드 — main 푸시 때만 레지스트리에 푸시
+  build-image:
+    needs: lint
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 3) 차트를 OCI 아티팩트로 게시 — 같은 버전이 이미 있으면 건너뜀(불변성)
+  publish-chart:
+    if: github.event_name == 'push'
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: package & push
+        run: |
+          VERSION=$(yq '.version' charts/shop-api/Chart.yaml)
+          if helm show chart $CHART_REPO/shop-api --version "$VERSION" >/dev/null 2>&1; then
+            echo "shop-api $VERSION 이미 게시됨 → Chart.yaml version 을 올려야 새로 게시됩니다"
+          else
+            helm package charts/shop-api
+            helm push shop-api-$VERSION.tgz $CHART_REPO
+          fi
+
+  # 4) GitOps: 운영 values 의 이미지 태그만 갱신하여 커밋 → Argo CD 가 감지
+  update-manifest:
+    if: github.event_name == 'push'
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bump image.tag in values-prod.yaml
+        env:
+          TAG: ${{ needs.build-image.outputs.tag }}
+        run: |
+          yq -i '.image.tag = strenv(TAG)' charts/shop-api/values-prod.yaml
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy(prod): shop-api ${TAG} [skip ci]" || echo "변경 없음"
+          git push

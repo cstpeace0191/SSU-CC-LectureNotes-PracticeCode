@@ -1,0 +1,42 @@
+%%{init: {"theme": "base", "flowchart": {"curve": "basis", "nodeSpacing": 28, "rankSpacing": 38, "padding": 10, "wrappingWidth": 320, "subGraphTitleMargin": {"top": 6, "bottom": 6}}, "themeVariables": {"fontFamily": "'Malgun Gothic', sans-serif", "fontSize": "18px", "edgeLabelBackground": "#FFFFFF", "lineColor": "#5B6B80", "clusterBkg": "#F5F7FA", "clusterBorder": "#9AA8BA"}}}%%
+flowchart LR
+  subgraph CP["GitHub 서버 — 제어"]
+    direction TB
+    E["<b>① 이벤트</b><br/>push · PR · 댓글<br/>schedule · 수동 실행"]
+    W["<b>② 워크플로 엔진</b><br/>workflows/*.yml 파싱<br/>on: 평가 · needs · matrix<br/>GITHUB_TOKEN 발급"]
+    Q["<b>③ Job 큐 · 브로커</b><br/>runs-on 라벨별 대기열"]
+    E --> W --> Q
+  end
+
+  subgraph RN["Runner — actions/runner"]
+    direction TB
+    L["<b>④ Runner.Listener</b><br/>long-poll로 job 수신"]
+    K["<b>⑤ Runner.Worker</b><br/>action 다운로드<br/>step 실행<br/>run · JS · Docker · composite"]
+    L --> K
+  end
+
+  subgraph DP["GitHub 서버 — 결과"]
+    direction TB
+    S[("<b>로그 · 아티팩트 · 캐시</b>")]
+    R["<b>⑦ 결과 반영</b><br/>PR 체크 ✅ / ❌<br/>Actions 탭"]
+    S --> R
+  end
+
+  CP == "HTTPS pull<br/>(Runner → 서버)" ==> RN
+  RN == "⑥ 로그 · 결과 보고" ==> DP
+
+  classDef ev fill:#1C7293,stroke:#1C7293,color:#FFFFFF
+  classDef eng fill:#002060,stroke:#002060,color:#FFFFFF
+  classDef q fill:#E8822A,stroke:#E8822A,color:#FFFFFF
+  classDef store fill:#5B6B80,stroke:#5B6B80,color:#FFFFFF
+  classDef res fill:#2E8B57,stroke:#2E8B57,color:#FFFFFF
+  classDef run fill:#6A3FA0,stroke:#6A3FA0,color:#FFFFFF
+  class E ev
+  class W eng
+  class Q q
+  class S store
+  class R res
+  class L,K run
+  style CP fill:#F5F7FA,stroke:#9AA8BA,stroke-width:2px,color:#002060
+  style DP fill:#F5F7FA,stroke:#9AA8BA,stroke-width:2px,color:#002060
+  style RN fill:#F4F0FA,stroke:#A48BC9,stroke-width:2px,color:#4B2A7A

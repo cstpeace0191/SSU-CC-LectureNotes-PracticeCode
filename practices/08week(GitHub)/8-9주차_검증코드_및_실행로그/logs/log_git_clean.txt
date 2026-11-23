@@ -1,0 +1,283 @@
+##### [0] 초기 커밋과 push
+
+$ git init -q -b main
+
+$ git add -A
+
+$ git commit -q -m "chore: initial import of todo app (FastAPI + React)"
+
+$ git remote add origin ../origin.git
+
+$ git push -q -u origin main
+
+$ git tag -a v0.1.0 -m "v0.1.0 baseline"
+
+$ git log --oneline --decorate
+539f79d (HEAD -> main, tag: v0.1.0, origin/main) chore: initial import of todo app (FastAPI + React)
+##### [1] Issue #1 → ci/1-github-actions 브랜치
+
+$ git switch -c ci/1-github-actions
+Switched to a new branch 'ci/1-github-actions'
+
+$ git add -A
+
+$ git commit -q -m "ci: add GitHub Actions CI, issue/PR templates, CODEOWNERS (#1)"
+
+$ git status -sb
+## ci/1-github-actions
+--- 로컬에서 CI 단계 실행 (client lint) ---
+
+/tmp/gitlab-sim/alice/client/src/main.tsx
+  6:52  error  Parsing error: Unexpected token !
+
+✖ 6 problems (6 errors, 0 warnings)
+
+>>> client lint 실패 (TSX 를 파싱할 TypeScript parser 없음)
+> client@0.0.0 lint
+> eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0
+
+>>> client lint 통과
+
+$ git add client
+
+$ git commit -q -m "fix(client): lint TSX with @typescript-eslint/parser (#1)"
+
+$ git push -q -u origin ci/1-github-actions
+
+$ git log --oneline main..ci/1-github-actions
+46e872a fix(client): lint TSX with @typescript-eslint/parser (#1)
+68061b6 ci: add GitHub Actions CI, issue/PR templates, CODEOWNERS (#1)
+
+$ git diff --stat main...ci/1-github-actions
+ .gitattributes                             |   4 +
+ .github/CODEOWNERS                         |   6 +
+ .github/ISSUE_TEMPLATE/bug_report.yml      |  33 +++
+ .github/ISSUE_TEMPLATE/config.yml          |   5 +
+ .github/ISSUE_TEMPLATE/feature_request.yml |  21 ++
+ .github/dependabot.yml                     |  18 ++
+ .github/pull_request_template.md           |  15 ++
+ .github/workflows/ci.yml                   | 108 +++++++++
+ backend/main.py                            |   2 +-
+ backend/pyproject.toml                     |  17 +-
+ backend/pytest.ini                         |   1 +
+ backend/requirements-dev.txt               |   3 +
+ backend/spec/routes/test_updateItem.py     |   4 +-
+ client/.eslintrc.cjs                       |   8 +-
+ client/package-lock.json                   | 365 +++++++++++++++++++++++++++++
+ client/package.json                        |   2 +
+ 16 files changed, 604 insertions(+), 8 deletions(-)
+--- PR #4 병합: Squash merge (GitHub의 'Squash and merge'와 동일 결과) ---
+
+$ git merge --squash ci/1-github-actions
+Updating 539f79d..46e872a
+Fast-forward
+Squash commit -- not updating HEAD
+ .gitattributes                             |   4 +
+ .github/CODEOWNERS                         |   6 +
+ .github/ISSUE_TEMPLATE/bug_report.yml      |  33 +++
+ .github/ISSUE_TEMPLATE/config.yml          |   5 +
+ .github/ISSUE_TEMPLATE/feature_request.yml |  21 ++
+ .github/dependabot.yml                     |  18 ++
+ .github/pull_request_template.md           |  15 ++
+ .github/workflows/ci.yml                   | 108 +++++++++
+ backend/main.py                            |   2 +-
+ backend/pyproject.toml                     |  17 +-
+ backend/pytest.ini                         |   1 +
+ backend/requirements-dev.txt               |   3 +
+ backend/spec/routes/test_updateItem.py     |   4 +-
+ client/.eslintrc.cjs                       |   8 +-
+ client/package-lock.json                   | 365 +++++++++++++++++++++++++++++
+ client/package.json                        |   2 +
+ 16 files changed, 604 insertions(+), 8 deletions(-)
+ create mode 100644 .gitattributes
+ create mode 100644 .github/CODEOWNERS
+ create mode 100644 .github/ISSUE_TEMPLATE/bug_report.yml
+ create mode 100644 .github/ISSUE_TEMPLATE/config.yml
+ create mode 100644 .github/ISSUE_TEMPLATE/feature_request.yml
+ create mode 100644 .github/dependabot.yml
+ create mode 100644 .github/pull_request_template.md
+ create mode 100644 .github/workflows/ci.yml
+ create mode 100644 backend/requirements-dev.txt
+
+$ git commit -q -m "ci: add GitHub Actions CI and collaboration templates (#4)" -m "Closes #1"
+
+$ git push -q origin main
+##### [2] Issue #2 (bug) → fix/2-docker-vite-config
+
+$ git switch -c fix/2-docker-vite-config
+Switched to a new branch 'fix/2-docker-vite-config'
+
+$ git diff --stat
+ Dockerfile | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+$ git commit -qam "fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)"
+
+$ git push -q -u origin fix/2-docker-vite-config
+--- PR #5 병합: Create a merge commit (--no-ff) ---
+
+$ git merge -q --no-ff fix/2-docker-vite-config -m "Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config"
+
+$ git push -q origin main
+##### [3] Issue #3 (feature) → feat/3-completed-filter  /  동료 bob 의 동시 변경
+
+$ git switch -c feat/3-completed-filter
+Switched to a new branch 'feat/3-completed-filter'
+
+$ git add -A
+
+$ git commit -q -m "feat(api): filter items by ?completed=true|false (#3)"
+
+$ git push -q -u origin feat/3-completed-filter
+
+$ git commit -qam "feat(api): list incomplete items first (#6)"
+
+$ git push -q origin main
+--- alice: main 이 앞서 나감 → rebase 시도 ---
+
+$ git fetch -q origin
+
+$ git log --oneline --graph --all -8
+* 30e532d feat(api): list incomplete items first (#6)
+| * 155a559 feat(api): filter items by ?completed=true|false (#3)
+|/  
+*   42d2eed Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config
+|\  
+| * 105cc54 fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)
+|/  
+* 7e4d5cf ci: add GitHub Actions CI and collaboration templates (#4)
+* 539f79d chore: initial import of todo app (FastAPI + React)
+
+$ git rebase origin/main
+Rebasing (1/1)Auto-merging backend/src/routes/items.py
+CONFLICT (content): Merge conflict in backend/src/routes/items.py
+error: could not apply 155a559... feat(api): filter items by ?completed=true|false (#3)
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+Could not apply 155a559... feat(api): filter items by ?completed=true|false (#3)
+
+$ git status -s
+A  backend/spec/routes/test_filterItems.py
+UU backend/src/routes/items.py
+--- 충돌 표시 ---
+<<<<<<< HEAD
+    return sorted(items, key=lambda item: item["completed"])  # 미완료 항목 먼저
+=======
+    if completed is not None:
+        items = [item for item in items if item["completed"] == completed]
+    return items
+>>>>>>> 155a559 (feat(api): filter items by ?completed=true|false (#3))
+--- 해결 결과 ---
+@router.get("/api/items", response_model=List[Item])
+@router.get("/items", response_model=List[Item], include_in_schema=False)
+async def get_items(completed: Optional[bool] = None):
+    """완료 여부로 필터링: /api/items?completed=true|false (생략 시 전체)"""
+    items = await db.get_items()
+    if completed is not None:
+        items = [item for item in items if item["completed"] == completed]
+    return sorted(items, key=lambda item: item["completed"])  # 미완료 항목 먼저
+
+
+@router.post("/api/items", response_model=Item, status_code=status.HTTP_200_OK)
+--- 해결 후 테스트 ---
+...................                                                      [100%]
+19 passed in 0.35s
+
+$ git add backend/src/routes/items.py
+
+$ GIT_EDITOR=true git rebase --continue
+[detached HEAD 163e71e] feat(api): filter items by ?completed=true|false (#3)
+ 2 files changed, 43 insertions(+), 2 deletions(-)
+ create mode 100644 backend/spec/routes/test_filterItems.py
+[KSuccessfully rebased and updated refs/heads/feat/3-completed-filter.
+
+$ git push -q --force-with-lease origin feat/3-completed-filter
+
+$ git log --oneline --graph -5
+* 163e71e feat(api): filter items by ?completed=true|false (#3)
+* 30e532d feat(api): list incomplete items first (#6)
+*   42d2eed Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config
+|\  
+| * 105cc54 fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)
+|/  
+* 7e4d5cf ci: add GitHub Actions CI and collaboration templates (#4)
+--- PR #7 병합: Rebase and merge (fast-forward) ---
+
+$ git merge --ff-only feat/3-completed-filter
+Updating 30e532d..163e71e
+Fast-forward
+ backend/spec/routes/test_filterItems.py | 38 +++++++++++++++++++++++++++++++++
+ backend/src/routes/items.py             |  7 ++++--
+ 2 files changed, 43 insertions(+), 2 deletions(-)
+ create mode 100644 backend/spec/routes/test_filterItems.py
+
+$ git push -q origin main
+
+$ git tag -a v0.2.0 -m "v0.2.0: CI + docker fix + completed filter"
+
+$ git log --oneline --graph --decorate -10
+* 163e71e (HEAD -> main, tag: v0.2.0, origin/main, origin/feat/3-completed-filter, feat/3-completed-filter) feat(api): filter items by ?completed=true|false (#3)
+* 30e532d feat(api): list incomplete items first (#6)
+*   42d2eed Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config
+|\  
+| * 105cc54 fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)
+|/  
+* 7e4d5cf ci: add GitHub Actions CI and collaboration templates (#4)
+* 539f79d (tag: v0.1.0) chore: initial import of todo app (FastAPI + React)
+##### [4] 잘못된 병합 되돌리기: git revert (공유 이력은 reset 금지)
+
+$ git revert --no-edit HEAD~0 >/dev/null; git log --oneline -2
+bfffab8 Revert "feat(api): filter items by ?completed=true|false (#3)"
+163e71e feat(api): filter items by ?completed=true|false (#3)
+15 passed in 0.34s
+
+$ git reset -q --hard HEAD~1
+
+$ git log --oneline -1
+163e71e feat(api): filter items by ?completed=true|false (#3)
+##### [5] 이력 조사 명령
+
+$ git log --oneline --graph --decorate --all -12
+* 163e71e (HEAD -> main, tag: v0.2.0, origin/main, origin/feat/3-completed-filter, feat/3-completed-filter) feat(api): filter items by ?completed=true|false (#3)
+* 30e532d feat(api): list incomplete items first (#6)
+*   42d2eed Merge pull request #5 from cstpeace0191/fix/2-docker-vite-config
+|\  
+| * 105cc54 fix(docker): copy vite.config.ts and tsconfig*.json; run as non-root (#2)
+|/  
+* 7e4d5cf ci: add GitHub Actions CI and collaboration templates (#4)
+* 539f79d (tag: v0.1.0) chore: initial import of todo app (FastAPI + React)
+
+$ git log --format="%h %an %s" -- backend/src/routes/items.py
+163e71e cstpeace0191 feat(api): filter items by ?completed=true|false (#3)
+30e532d bob-reviewer feat(api): list incomplete items first (#6)
+539f79d cstpeace0191 chore: initial import of todo app (FastAPI + React)
+
+$ git blame -L 12,18 backend/src/routes/items.py | cut -c1-90
+163e71e8 (cstpeace0191 2026-11-18 10:42:00 +0900 12) async def get_items(completed: Option
+163e71e8 (cstpeace0191 2026-11-18 10:42:00 +0900 13)     """완료 여부로 필터링: /a
+^539f79d (cstpeace0191 2026-11-18 10:00:00 +0900 14)     items = await db.get_items()
+163e71e8 (cstpeace0191 2026-11-18 10:42:00 +0900 15)     if completed is not None:
+163e71e8 (cstpeace0191 2026-11-18 10:42:00 +0900 16)         items = [item for item in ite
+30e532d9 (bob-reviewer 2026-11-18 10:49:00 +0900 17)     return sorted(items, key=lambda i
+^539f79d (cstpeace0191 2026-11-18 10:00:00 +0900 18) 
+
+$ git describe --tags
+v0.2.0
+
+$ git shortlog -sn HEAD
+     5	cstpeace0191
+     1	bob-reviewer
+
+$ git cat-file -t HEAD
+commit
+
+$ git cat-file -p HEAD | head -6
+tree f1b381654c654f60f73940e417e2af9060272836
+parent 30e532d9b83bf42b2ca20ec30a88fbbca7320548
+author cstpeace0191 <cstpeace0191@users.noreply.github.com> 1794966120 +0900
+committer cstpeace0191 <cstpeace0191@users.noreply.github.com> 1794966540 +0900
+
+feat(api): filter items by ?completed=true|false (#3)
+SCENARIO OK

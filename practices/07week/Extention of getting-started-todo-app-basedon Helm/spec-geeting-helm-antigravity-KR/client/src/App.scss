@@ -1,0 +1,60 @@
+@import 'bootstrap/scss/bootstrap';
+
+body {
+    background-color: #f8f9fa;
+    margin-top: 50px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #212529; /* High contrast text */
+}
+
+/* Accessibility focus indicator */
+:focus-visible {
+    outline: 3px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Todo Card styling */
+.todo-list-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+/* Todo item completed style */
+.item {
+    transition: background-color 0.15s ease-in-out;
+
+    &.completed {
+        .name {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+    }
+
+    &:hover {
+        background-color: #f1f3f5;
+    }
+}
+
+.item-name {
+    word-break: break-word;
+    font-size: 1.05rem;
+}
+
+.toggles button,
+.delete-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+
+    &:hover {
+        background-color: #e9ecef;
+    }
+
+    &:focus-visible {
+        outline: 2px solid #0d6efd;
+    }
+}
+

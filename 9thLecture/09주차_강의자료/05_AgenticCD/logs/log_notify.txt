@@ -1,0 +1,11 @@
+CONDITION                                                                                    RESULT
+app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']  true
+{"level":"info","msg":"Sending notification about condition 'on-sync-failed.[0].QocUZC1QzO--b2WEwALX85YPE5o' to '{github }' using the configuration in namespace argocd","resource":"argocd/todo-dev","time":"2026-11-18T14:49:19+09:00"}
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS     HEALTH       SYNCPOLICY  COND
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     OutOfSync  Progressing  Auto-Prune  Sync
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     Synced     Progressing  Manual      <non
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced     Progressing  Auto-Prune  <non
+NAME              CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH       SYNCPOLICY  CONDITI
+argocd/todo-dev   https://kubernetes.default.svc  todo-dev   todo     Synced  Progressing  Auto-Prune  <none> 
+argocd/todo-prod  https://kubernetes.default.svc  todo-prod  todo     Synced  Progressing  Manual      <none> 
+argocd/todo-stg   https://kubernetes.default.svc  todo-stg   todo     Synced  Progressing  Auto-Prune  <none> 

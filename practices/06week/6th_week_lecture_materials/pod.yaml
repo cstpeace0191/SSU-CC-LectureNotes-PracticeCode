@@ -1,0 +1,23 @@
+#pod.yaml
+apiVersion: v1                # ① 쿠버네티스 핵심(Core) API 버전
+kind: Pod                     # ② 최소 배포 단위인 Pod 리소스 지정
+metadata:                     # ③ Pod의 메타데이터 (식별 정보)
+  name: web-pod               #    - Pod의 고유한 이름
+  namespace: default          #    - 배포 대상 네임스페이스
+  labels:                     #    - 리소스 검색 및 그룹화를 위한 키-값 라벨
+    app: web                  #      - 'app=web' 라벨 부여 (Service 연결 및 조회용)
+  annotations:
+    ignore-check.kube-linter.io/no-read-only-root-fs: "표준 nginx 이미지는 /var/cache 등 쓰기 권한이 필요함"
+    ignore-check.kube-linter.io/run-as-non-root: "표준 nginx 이미지는 80 포트 바인딩 및 초기 구동 시 root 권한이 필요함"
+spec:                         # ④ Pod의 실제 동작 사양 (PodSpec)
+  # [kube-linter 참고] 표준 nginx 이미지는 /var/cache, /var/run 쓰기 및 80 포트 바인딩이 필요하므로
+  # 어노테이션으로 룰을 예외 처리하고 기본 root 실행을 허용합니다.
+  containers:                 #    - Pod 내부에서 실행될 컨테이너 목록
+  - name: nginx               #      - 컨테이너 고유 식별 이름
+    image: nginx:1.27         #      - 실행할 컨테이너 이미지 및 태그
+    ports:                    #      - 컨테이너가 노출하는 네트워크 포트 목록
+    - containerPort: 80       #        - 컨테이너 내부 수신 포트 번호 (HTTP 기본 80)
+    resources:                #      - 컴퓨팅 리소스 요청량 및 제한치 설정
+      requests: { cpu: 100m, memory: 128Mi } # - 최소 보장 자원 (CPU 0.1코어, 메모리 128Mi)
+      limits:   { memory: 256Mi }            # - 최대 허용 메모리 (초과 시 OOMKill 방지)
+  restartPolicy: Always       # ⑤ 컨테이너 종료 시 자동 재시작 정책 (Always, OnFailure, Never)

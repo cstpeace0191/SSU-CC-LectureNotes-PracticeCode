@@ -1,0 +1,114 @@
+# ==========================================
+# 1. MySQL PersistentVolumeClaim (데이터 영속화)
+# ==========================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todo-mysql-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ==========================================
+# 2. MySQL Service (앱이 'mysql' 이름으로 접속)
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# ==========================================
+# 3. MySQL Deployment
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "secret"
+            - name: MYSQL_DATABASE
+              value: "todos"
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: todo-mysql-data-pvc
+---
+# ==========================================
+# 4. Getting-Started App Deployment
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: getting-started-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: getting-started-app
+  template:
+    metadata:
+      labels:
+        app: getting-started-app
+    spec:
+      containers:
+        - name: getting-started
+          image: getting-started
+          # 💡 KIND에 적재된 로컬 이미지를 사용하도록 설정 (Docker Hub 요청 방지)
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          # 💡 MySQL 접속 정보 설정
+          env:
+            - name: MYSQL_HOST
+              value: "mysql" # MySQL Service 이름과 동일
+            - name: MYSQL_USER
+              value: "root"
+            - name: MYSQL_PASSWORD
+              value: "secret"
+            - name: MYSQL_DB
+              value: "todos"
+---
+# ==========================================
+# 5. Getting-Started App Service (외부 노출용)
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: getting-started-service
+spec:
+  type: ClusterIP
+  selector:
+    app: getting-started-app
+  ports:
+    - port: 3000
+      targetPort: 3000
