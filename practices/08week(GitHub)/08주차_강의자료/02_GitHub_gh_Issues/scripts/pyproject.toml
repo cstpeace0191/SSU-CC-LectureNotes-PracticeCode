@@ -1,6 +1,0 @@
-[project]
-name = "scripts"
-version = "0.1.0"
-description = "scripts Python code package"
-requires-python = ">=3.12"
-dependencies = []

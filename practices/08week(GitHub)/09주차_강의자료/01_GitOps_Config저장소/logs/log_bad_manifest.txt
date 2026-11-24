@@ -1,5 +1,0 @@
-$ kubeconform -strict -summary bad.yaml
-bad.yaml - Deployment todo-app is invalid: problem validating schema. Check JSON formatting: jsonschema validation failed with 'https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.33.0-standalone-strict/deployment-apps-v1.json#' - at '/spec/replicas': got string, want null or integer - at '/spec/template/spec/containers/0/ports/0': additional properties 'protocl' not allowed
-Summary: 1 resource found in 1 file - Valid: 0, Invalid: 1, Errors: 0, Skipped: 0
-$ kube-linter lint bad.yaml --config .kube-linter.yaml
-Warning: no valid objects found.
